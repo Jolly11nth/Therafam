@@ -1,0 +1,164 @@
+{
+  "data": {
+    "nodes": [
+      {
+        "id": "redis-memory",
+        "type": "custom",
+        "data": {
+          "node": {
+            "name": "RedisChatMemory",
+            "type": "Memory",
+            "display_name": "Redis Chat Memory",
+            "fields": {
+              "host": "localhost",
+              "port": 6379,
+              "database": "0",
+              "username": "",
+              "password": "",
+              "session_id": "session_1"
+            }
+          }
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": "therapy-prompt",
+        "type": "custom",
+        "data": {
+          "node": {
+            "name": "Prompt",
+            "type": "Prompt",
+            "display_name": "Therapy Prompt",
+            "fields": {
+              "template": "You are Therafam, an empathetic CBT assistant.\n\nRules:\n- Respond like a therapist in conversation, not like a script.\n- Validate feelings, ask gentle questions, and offer CBT-based suggestions.\n- If the user expresses suicidal thoughts or crisis terms, immediately ask if they want to be connected to a professional.\n- Keep responses short (2\u20134 sentences).\n\nConversation so far:\n{chat_history}\n\nUser: {user_input}\n\nTherafam:"
+            }
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 0
+        }
+      },
+      {
+        "id": "llm-main",
+        "type": "llm",
+        "data": {
+          "node": {
+            "name": "OpenAI LLM",
+            "type": "LLM",
+            "display_name": "Main LLM",
+            "fields": {
+              "model_name": "gpt-4o-mini",
+              "temperature": 0.7,
+              "max_tokens": 512
+            }
+          }
+        },
+        "position": {
+          "x": 600,
+          "y": 0
+        }
+      },
+      {
+        "id": "satisfaction-prompt",
+        "type": "custom",
+        "data": {
+          "node": {
+            "name": "Prompt",
+            "type": "Prompt",
+            "display_name": "Satisfaction Detector",
+            "fields": {
+              "template": "Based on the conversation below, was the user satisfied at the end?\n\nConversation:\n{chat_history}\n\nFinal user message: {user_input}\n\nAnswer only 'true' or 'false'."
+            }
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 300
+        }
+      },
+      {
+        "id": "llm-satisfaction",
+        "type": "llm",
+        "data": {
+          "node": {
+            "name": "OpenAI LLM",
+            "type": "LLM",
+            "display_name": "Satisfaction LLM",
+            "fields": {
+              "model_name": "gpt-4o-mini",
+              "temperature": 0,
+              "max_tokens": 5
+            }
+          }
+        },
+        "position": {
+          "x": 600,
+          "y": 300
+        }
+      },
+      {
+        "id": "supabase-upsert",
+        "type": "custom",
+        "data": {
+          "node": {
+            "name": "SupabaseVectorStore",
+            "type": "Database",
+            "display_name": "Supabase Upsert",
+            "fields": {
+              "supabase_url": "YOUR_SUPABASE_URL",
+              "supabase_service_key": "YOUR_SUPABASE_SERVICE_KEY",
+              "table_name": "conversations",
+              "query_name": "satisfaction_insert",
+              "satisfied": "{satisfaction}"
+            }
+          }
+        },
+        "position": {
+          "x": 900,
+          "y": 300
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-redis-to-prompt",
+        "source": "redis-memory",
+        "target": "therapy-prompt",
+        "sourceHandle": "chat_history",
+        "targetHandle": "chat_history"
+      },
+      {
+        "id": "edge-prompt-to-llm",
+        "source": "therapy-prompt",
+        "target": "llm-main",
+        "sourceHandle": "prompt",
+        "targetHandle": "prompt"
+      },
+      {
+        "id": "edge-redis-to-satisfaction-prompt",
+        "source": "redis-memory",
+        "target": "satisfaction-prompt",
+        "sourceHandle": "chat_history",
+        "targetHandle": "chat_history"
+      },
+      {
+        "id": "edge-satisfaction-prompt-to-llm",
+        "source": "satisfaction-prompt",
+        "target": "llm-satisfaction",
+        "sourceHandle": "prompt",
+        "targetHandle": "prompt"
+      },
+      {
+        "id": "edge-satisfaction-llm-to-supabase",
+        "source": "llm-satisfaction",
+        "target": "supabase-upsert",
+        "sourceHandle": "text",
+        "targetHandle": "satisfaction"
+      }
+    ]
+  }
+}
