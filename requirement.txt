@@ -1,0 +1,5 @@
+openai
+redis
+supabase
+numpy
+python-dotenv
