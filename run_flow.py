@@ -9,18 +9,18 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 # 🔑 Environment variables
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://owthpcipmzxflpmnqwkk.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93dGhwY2lwbXp4ZmxwbW5xd2trIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxMzE1ODQsImV4cCI6MjA3MTcwNzU4NH0.bV18YKUje3riKWkWRxadHQKAGLv7wVjW37VQ1IL1uy4")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ⚡ Initialize clients
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 r = redis.Redis(
-    host="redis-11131.c44.us-east-1-2.ec2.redns.redis-cloud.com",
-    port=11131,
+    host="REDIS_HOST",
+    port="REDIS_PORT",
     decode_responses=True,
     username="default",
-    password="cM9M6XxqPhpC5Ypmst5LEtGLiEIzthXs",
+    password="REDIS_PASSWORD",
 )
 client = OpenAI(api_key=OPENAI_API_KEY)
 
