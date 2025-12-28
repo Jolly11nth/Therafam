@@ -1,186 +1,371 @@
-# Therafam
+# Therafam Backend API
 
-Short description
-A one-line summary of what Therafam is (e.g., "Therafam is a web/mobile platform to ..."). Replace this with a clear project elevator pitch.
+AI-powered mental health support backend for the Therafam application.
 
-Badges
-- Build / CI: ![CI status](https://img.shields.io/badge/ci-pending-lightgrey)
-- License: ![License](https://img.shields.io/badge/license-MIT-blue)
-- Languages: ![Languages](https://img.shields.io/badge/languages-PLACEHOLDER-lightgrey)
+## 🚂 Quick Deploy to Railway
 
-Table of Contents
-- [About](#about)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-- [Running Locally](#running-locally)
-- [Testing](#testing)
-- [Linting & Formatting](#linting--formatting)
-- [Building & Deployment](#building--deployment)
-- [Docker (optional)](#docker-optional)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
+**For Railway deployment, see [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) for detailed instructions.**
 
-About
-Therafam is a project maintained in the repository Jolly11nth/Therafam. Replace this section with a more detailed description, goals, and target audience. Explain why the project exists and what problems it solves.
+Quick steps:
+1. Push code to GitHub
+2. Create new Railway project from GitHub repo
+3. Set root directory to `backend`
+4. Add environment variables
+5. Deploy!
 
-Features
-- Feature 1 — short description
-- Feature 2 — short description
-- Feature 3 — short description
-Add or remove features as appropriate.
+## 🚀 Quick Start
 
-Tech Stack
-These are the main technologies used (update these to match your repo):
-- Primary languages: [Replace with actual languages and percentages]
-- Framework(s): e.g., Node.js / Express, Django, React, Next.js, Flutter, etc.
-- Database: e.g., PostgreSQL, MongoDB, SQLite
-- Others: Docker, Redis, etc.
+### Prerequisites
 
-Tip: To get the exact language composition, use the GitHub repository languages panel or `github-linguist`.
+- Python 3.10 or higher
+- pip (Python package manager)
+- Virtual environment tool (venv or virtualenv)
+- Supabase account
+- OpenAI API key
+- Redis instance (optional for production features)
 
-Getting Started
+### Local Development Setup
 
-Prerequisites
-- Git >= 2.x
-- Node.js >= 14.x (if this is a Node project)
-- Python 3.8+ (if a Python project)
-- Docker & Docker Compose (optional)
-Update the list to match your project's real prerequisites.
+1. **Navigate to backend directory**
+   ```bash
+   cd backend
+   ```
 
-Installation (examples)
-Clone the repo:
-```bash
-git clone https://github.com/Jolly11nth/Therafam.git
-cd Therafam
+2. **Create and activate virtual environment**
+   ```bash
+   # On macOS/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   
+   # On Windows
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual credentials
+   ```
+
+5. **Run the development server**
+   ```bash
+   python main.py
+   ```
+
+   The API will be available at: `http://localhost:8000`
+   - API Documentation: `http://localhost:8000/api/docs`
+   - Alternative Docs: `http://localhost:8000/api/redoc`
+
+## 📡 API Endpoints
+
+### Core Endpoints
+
+#### `POST /api/chat`
+Main AI chat endpoint for therapeutic conversations.
+
+**Request:**
+```json
+{
+  "message": "I've been feeling really anxious lately",
+  "user_id": "user_123",
+  "session_id": "session_456"
+}
 ```
 
-Node.js / JavaScript example:
-```bash
-# install dependencies
-npm install
-
-# set up environment
-cp .env.example .env
-# edit .env with your values
-
-# run development server
-npm run dev
+**Response:**
+```json
+{
+  "response": "I hear you, and I want you to know that...",
+  "is_crisis": false,
+  "crisis_keywords": null,
+  "detected_emotions": ["anxiety", "stress"],
+  "therapist_suggestion": {
+    "suggest": true,
+    "urgency": "medium",
+    "reason": "multiple_concerns",
+    "message": "A therapist could help you develop personalized strategies."
+  },
+  "timestamp": "2025-12-28T10:30:00.000Z"
+}
 ```
 
-Python / Django example:
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# perform migrations
-python manage.py migrate
-python manage.py runserver
+#### `POST /api/crisis-check`
+Quick crisis detection without full AI response.
+
+**Request:**
+```json
+{
+  "message": "I'm thinking about ending it all"
+}
 ```
 
-Adjust these instructions for your project's stack.
-
-Environment Variables
-List environment variables required by the project and example values (move secrets to .env which is excluded from VCS).
-- DATABASE_URL=postgres://user:pass@localhost:5432/therafam
-- SECRET_KEY=your-secret-key
-- API_KEY=your-api-key
-Provide a .env.example committed to the repo with non-sensitive sample values.
-
-Running Locally
-Describe how to run the app locally (development and production modes). Example:
-- Development: `npm run dev`
-- Production build: `npm run build` then `npm start`
-
-Testing
-Explain how to run tests:
-- Unit tests:
-  - Node: `npm test`
-  - Python: `pytest`
-- Integration / e2e tests (if any): describe commands.
-
-Linting & Formatting
-- Lint: `npm run lint` (ESLint) or `flake8` (Python)
-- Format: `npm run format` (Prettier) or `black` (Python)
-
-Building & Deployment
-Brief instructions for building and deploying:
-- Build: `npm run build`
-- Deploy: push to hosting provider (Netlify, Vercel, Heroku, AWS, etc.)
-Describe any CI/CD steps or links to the deployment pipeline.
-
-Docker (optional)
-Provide a note if a Dockerfile / docker-compose is available:
-```bash
-# build image
-docker build -t therafam:latest .
-
-# run container
-docker run -p 3000:3000 --env-file .env therafam:latest
-```
-If there is a docker-compose.yml, give the compose command:
-```bash
-docker-compose up --build
+**Response:**
+```json
+{
+  "is_crisis": true,
+  "crisis_keywords": ["ending it all", "suicide"],
+  "crisis_resources": "🆘 IMMEDIATE SUPPORT NEEDED..."
+}
 ```
 
-Project Structure
-Give a high-level overview of the repo layout. Update to match your repository.
-- /src — application source code
-- /client — frontend
-- /server — backend
-- /config — configuration files
-- /tests — test suite
-- .env.example — sample environment variables
-- README.md — this file
+#### `POST /api/emotion-detection`
+Detect emotional states in user messages.
 
-Contributing
-We welcome contributions! Please follow these steps:
-1. Fork the repository.
-2. Create a feature branch: `git checkout -b feat/my-feature`
-3. Commit your changes: `git commit -m "feat: add my feature"`
-4. Push to your fork: `git push origin feat/my-feature`
-5. Open a pull request against `main` and describe your changes.
+**Request:**
+```json
+{
+  "message": "I feel so overwhelmed and sad"
+}
+```
 
-Include contribution guidelines, code style, commit message conventions, and a PR template if you have them. Link to ISSUE_TEMPLATE / PULL_REQUEST_TEMPLATE if present.
+**Response:**
+```json
+{
+  "detected_emotions": ["stress", "depression"],
+  "therapist_suggestion": {
+    "suggest": true,
+    "urgency": "medium",
+    "reason": "multiple_concerns"
+  }
+}
+```
 
-Code of Conduct
-Add or link to your Code of Conduct (e.g., Contributor Covenant).
+#### `GET /api/mood-context/{user_id}`
+Retrieve mood tracking data for a user.
 
-License
-This project is licensed under the [MIT License](LICENSE) — replace with the actual license or remove if not applicable.
+**Response:**
+```json
+{
+  "user_id": "user_123",
+  "mood_data": {
+    "recent_moods": [...]
+  },
+  "timestamp": "2025-12-28T10:30:00.000Z"
+}
+```
 
-Contact
-- Maintainer: Jolly11nth (GitHub: https://github.com/Jolly11nth)
-- Repository owner: therafam (GitHub: https://github.com/therafam)
-Add email or other contact channels if desired.
+#### `GET /api/health`
+Health check endpoint.
 
-Acknowledgements
-- List third-party libraries, inspirations, and contributors.
+**Response:**
+```json
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2025-12-28T10:30:00.000Z",
+  "environment": "development"
+}
+```
 
-Troubleshooting & FAQ
-Add common issues and fixes (database migrations, port conflicts, env var errors).
+## 🔧 Configuration
 
-FAQ
-Q: Where do I change configuration X?
-A: Edit .env or the config files in /config.
+### Environment Variables
 
-Appendix: Quick checklist to finalize this README
-- [ ] Replace the short description with an accurate project summary.
-- [ ] Update Tech Stack to reflect actual languages and frameworks used.
-- [ ] Fill in exact installation and run commands.
-- [ ] Populate environment variables and provide .env.example.
-- [ ] Add badges (CI, Coverage, License) linked to real services.
-- [ ] Add LICENSE file and link license badge.
-- [ ] Provide any screenshots or demo GIFs under an "Screenshots" section.
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `PORT` | Server port | No | 8000 |
+| `ENV` | Environment (development/staging/production) | No | development |
+| `LOG_LEVEL` | Logging level | No | INFO |
+| `SUPABASE_URL` | Supabase project URL | Yes | - |
+| `SUPABASE_KEY` | Supabase service role key | Yes | - |
+| `OPENAI_API_KEY` | OpenAI API key | Yes | - |
+| `REDIS_HOST` | Redis host URL | Optional | - |
+| `REDIS_PORT` | Redis port | Optional | 6379 |
+| `REDIS_PASSWORD` | Redis password | Optional | - |
 
-If you want, I can:
-- Fill this README with repository-specific details by reading the repo (I can fetch files and detect languages).
-- Generate badges and a completed Tech Stack section based on the repo contents.
-- Add example screenshots and CI badge URLs if you provide the CI provider or allow me to inspect the repo.
+## 🚀 Deployment
+
+### Deploy to Production Server
+
+1. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Set environment variables**
+   ```bash
+   export ENV=production
+   export PORT=8000
+   export SUPABASE_URL=https://your-project.supabase.co
+   export SUPABASE_KEY=your-key
+   export OPENAI_API_KEY=your-key
+   # ... other variables
+   ```
+
+3. **Run with Gunicorn (recommended for production)**
+   ```bash
+   gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000
+   ```
+
+### Deploy to Railway
+
+1. Create a new project on [Railway](https://railway.app)
+2. Connect your GitHub repository
+3. Set the root directory to `/backend`
+4. Add environment variables in Railway dashboard
+5. Railway will automatically detect and deploy the Python application
+
+### Deploy to Render
+
+1. Create a new Web Service on [Render](https://render.com)
+2. Connect your repository
+3. Configure:
+   - **Root Directory**: `backend`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT`
+4. Add environment variables
+5. Deploy
+
+### Deploy to Heroku
+
+1. Install Heroku CLI
+2. Create a `Procfile` in the backend directory:
+   ```
+   web: gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT
+   ```
+3. Deploy:
+   ```bash
+   heroku create your-app-name
+   heroku config:set SUPABASE_URL=your-url
+   heroku config:set SUPABASE_KEY=your-key
+   heroku config:set OPENAI_API_KEY=your-key
+   git subtree push --prefix backend heroku main
+   ```
+
+### Deploy to Fly.io
+
+1. Install Fly CLI
+2. Create `fly.toml` in backend directory:
+   ```toml
+   app = "therafam-backend"
+   
+   [env]
+     PORT = "8000"
+   
+   [[services]]
+     internal_port = 8000
+     protocol = "tcp"
+   
+     [[services.ports]]
+       handlers = ["http"]
+       port = 80
+   
+     [[services.ports]]
+       handlers = ["tls", "http"]
+       port = 443
+   ```
+3. Deploy:
+   ```bash
+   fly launch
+   fly secrets set SUPABASE_URL=your-url
+   fly secrets set SUPABASE_KEY=your-key
+   fly secrets set OPENAI_API_KEY=your-key
+   fly deploy
+   ```
+
+## 🧪 Testing
+
+### Manual Testing with curl
+
+```bash
+# Health check
+curl http://localhost:8000/api/health
+
+# Chat endpoint
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "I feel anxious", "user_id": "test_user"}'
+
+# Crisis check
+curl -X POST http://localhost:8000/api/crisis-check \
+  -H "Content-Type: application/json" \
+  -d '{"message": "I want to hurt myself"}'
+```
+
+### Testing with the Interactive CLI
+
+The `run_flow.py` script includes an interactive CLI for testing:
+
+```bash
+python run_flow.py
+```
+
+This provides a conversational interface to test the AI responses.
+
+## 📊 Monitoring and Logs
+
+Logs are written to:
+- Console (stdout)
+- `therafam_backend.log` file
+- `therafam_ai.log` file (from run_flow.py)
+
+Log format:
+```
+2025-12-28 10:30:00 - TherafamBackend - INFO - Processing chat request from user: user_123
+```
+
+## 🔒 Security Considerations
+
+1. **Never commit `.env` file** - Add to `.gitignore`
+2. **Use HTTPS in production** - Configure SSL/TLS
+3. **Rotate API keys regularly** - Update OpenAI and Supabase keys
+4. **Rate limiting** - Implement rate limiting for production
+5. **Authentication** - Add authentication middleware for sensitive endpoints
+6. **CORS** - Configure CORS to only allow your frontend domain
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+backend/
+├── main.py                    # FastAPI application entry point
+├── run_flow.py               # Therafam AI core logic
+├── requirements.txt          # Python dependencies
+├── .env.example             # Environment template
+├── README.md                # This file
+├── database/
+│   ├── therafam_schema.sql  # Database schema
+│   └── setup_database.js    # Database setup script
+└── logs/
+    ├── therafam_backend.log # API logs
+    └── therafam_ai.log      # AI processing logs
+```
+
+### Adding New Endpoints
+
+1. Add route decorator to `main.py`:
+   ```python
+   @app.post("/api/new-endpoint")
+   async def new_endpoint(request: RequestModel):
+       # Implementation
+       return response
+   ```
+
+2. Create Pydantic models for request/response
+3. Update API documentation in this README
+4. Test the endpoint
+
+## 📝 License
+
+Copyright © 2025 Therafam. All rights reserved.
+
+## 🆘 Crisis Resources
+
+If you or someone you know is in crisis:
+- **US**: Call 988 (Suicide & Crisis Lifeline)
+- **Crisis Text Line**: Text HOME to 741741
+- **Emergency**: Call 911
+
+## 📧 Support
+
+For technical support or questions about deployment:
+- Check the documentation at `/api/docs`
+- Review logs in `therafam_backend.log`
+- Contact the development team
