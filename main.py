@@ -181,19 +181,11 @@ async def root():
         }
     }
 
-@app.get("/api/health", response_model=HealthResponse)
-async def health_check():
-    """
-    Health check endpoint
-    
-    Returns server status and basic information
-    """
-    return HealthResponse(
-        status="healthy",
-        version="1.0.0",
-        timestamp=datetime.utcnow().isoformat(),
-        environment=ENV
-    )
+@app.get("/api/health")
+def health():
+    return {
+        "status": "ok"
+    }
 
 @app.post("/api/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
 async def chat_with_ai(request: ChatRequest):
