@@ -29,12 +29,11 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
 # ============================================================================
-# LAZY CLIENT FACTORIES (CRITICAL FOR RAILWAY / GUNICORN)
+# CLIENT FACTORIES
 # ============================================================================
 
 def get_supabase():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
-
 
 def get_redis():
     return redis.Redis(
@@ -42,15 +41,28 @@ def get_redis():
         port=REDIS_PORT,
         password=REDIS_PASSWORD,
         username="default",
-        decode_responses=False,  # required for vectors + memory bytes
+        decode_responses=False,
     )
-
 
 def get_openai():
     return OpenAI(api_key=OPENAI_API_KEY)
 
 # ============================================================================
-# CRISIS + EMOTION LOGIC (PURE FUNCTIONS)
+# RATE LIMITING (ABUSE PROTECTION)
+# ============================================================================
+
+def rate_limit(user_id: str, limit: int = 30) -> bool:
+    try:
+        r = get_redis()
+        key = f"rate:{user_id}"
+        count = r.incr(key)
+        r.expire(key, 60)
+        return count <= limit
+    except Exception:
+        return True  # fail open to avoid blocking crisis
+
+# ============================================================================
+# CRISIS + EMOTION LOGIC
 # ============================================================================
 
 CRISIS_KEYWORDS = [
@@ -59,12 +71,26 @@ CRISIS_KEYWORDS = [
     "overdose", "hang myself", "jump off", "gun"
 ]
 
+PASSIVE_IDEATION = [
+    "tired of everything", "wish i could disappear",
+    "no reason to live", "can't go on"
+]
+
+ESCALATION_KEYWORDS = [
+    "can't cope", "getting worse", "out of control",
+    "nothing helps", "breaking down", "losing it"
+]
+
+THERAPIST_KEYWORDS = [
+    "therapist", "therapy", "professional help",
+    "counselor", "mental health professional"
+]
 
 def is_crisis(user_input: str) -> Tuple[bool, List[str]]:
     text = user_input.lower()
     hits = [k for k in CRISIS_KEYWORDS if k in text]
-    return bool(hits), hits
-
+    passive = [k for k in PASSIVE_IDEATION if k in text]
+    return bool(hits or passive), hits + passive
 
 def detect_emotional_state(user_input: str) -> List[str]:
     text = user_input.lower()
@@ -74,198 +100,124 @@ def detect_emotional_state(user_input: str) -> List[str]:
         emotions.append("anxiety")
     if any(w in text for w in ["sad", "hopeless", "empty"]):
         emotions.append("depression")
-    if any(w in text for w in ["angry", "furious", "rage"]):
+    if any(w in text for w in ["angry", "rage", "furious"]):
         emotions.append("anger")
 
     return emotions
 
 # ============================================================================
-# CONTEXT HELPERS (SUPABASE)
+# MEMORY + ESCALATION (REDIS)
 # ============================================================================
 
-def get_mood_context(user_id: str) -> Dict:
-    try:
-        supabase = get_supabase()
-        res = (
-            supabase.table("mood_tracking")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(5)
-            .execute()
-        )
-        return {"recent_moods": res.data or []}
-    except Exception as e:
-        logger.warning(f"Mood context failed: {e}")
-        return {"recent_moods": []}
-
-
-def get_therapy_notes(user_id: str) -> List[str]:
-    try:
-        supabase = get_supabase()
-        res = (
-            supabase.table("therapy_sessions")
-            .select("notes, insights")
-            .eq("user_id", user_id)
-            .limit(3)
-            .execute()
-        )
-        return [
-            f"{row.get('notes', '')} {row.get('insights', '')}".strip()
-            for row in (res.data or [])
-        ]
-    except Exception as e:
-        logger.warning(f"Therapy notes failed: {e}")
-        return []
-
-# ============================================================================
-# STEP A — CONVERSATION MEMORY (REDIS)
-# ============================================================================
-
-MEMORY_TTL_SECONDS = 60 * 60 * 24  # 24 hours
-MAX_MEMORY_TURNS = 6  # user + AI pairs
-
+MEMORY_TTL_SECONDS = 86400
+MAX_MEMORY_TURNS = 6
 
 def load_conversation_memory(user_id: str) -> List[str]:
     try:
         r = get_redis()
-        key = f"memory:{user_id}"
-        messages = r.lrange(key, 0, -1)
-        return [m.decode("utf-8") for m in messages]
-    except Exception as e:
-        logger.warning(f"Memory load failed: {e}")
+        msgs = r.lrange(f"memory:{user_id}", -MAX_MEMORY_TURNS * 2, -1)
+        return [m.decode() for m in msgs]
+    except Exception:
         return []
-
 
 def save_conversation_turn(user_id: str, user_msg: str, ai_msg: str):
     try:
         r = get_redis()
         key = f"memory:{user_id}"
-
         r.rpush(key, f"User: {user_msg}")
         r.rpush(key, f"Therafam AI: {ai_msg}")
-
-        # keep only last N turns
         r.ltrim(key, -MAX_MEMORY_TURNS * 2, -1)
         r.expire(key, MEMORY_TTL_SECONDS)
-    except Exception as e:
-        logger.warning(f"Memory save failed: {e}")
+    except Exception:
+        pass
 
-# ============================================================================
-# AI HELPERS
-# ============================================================================
-
-def embed_text(text: str) -> bytes:
-    client = get_openai()
-    embedding = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=text,
-    ).data[0].embedding
-    return np.array(embedding, dtype=np.float32).tobytes()
-
-
-def search_redis_context(vector: bytes, k: int = 5) -> List[str]:
+def increment_escalation(user_id: str) -> int:
     try:
         r = get_redis()
-        results = r.ft("idx:docs").search(
-            f"*=>[KNN {k} @embedding $vec]",
-            query_params={"vec": vector},
-        )
-        return [doc.content for doc in results.docs]
-    except Exception as e:
-        logger.warning(f"Redis search failed: {e}")
-        return []
+        key = f"escalation:{user_id}"
+        score = r.incr(key)
+        r.expire(key, MEMORY_TTL_SECONDS)
+        return score
+    except Exception:
+        return 0
 
 # ============================================================================
 # CRISIS RESPONSE
 # ============================================================================
 
-def generate_crisis_response(_: List[str]) -> str:
+def generate_crisis_response() -> str:
     return (
         "🆘 **IMMEDIATE SUPPORT NEEDED**\n\n"
-        "You are not alone, and your life matters.\n\n"
-        "• **US**: Call or text **988** (Suicide & Crisis Lifeline)\n"
-        "• **If in immediate danger**, call emergency services now\n\n"
-        "If you can, reach out to someone you trust and stay connected.\n\n"
-        "I care about your safety."
+        "I’m really concerned about you. You deserve help and safety.\n\n"
+        "• **US**: Call or text **988** (24/7)\n"
+        "• If you’re in danger, contact emergency services now\n\n"
+        "Please reach out to someone you trust and stay with others if you can."
     )
 
 # ============================================================================
-# MAIN FLOW (PRODUCTION SAFE)
+# MAIN FLOW
 # ============================================================================
 
 def run_flow(user_input: str, user_id: str = "anonymous") -> str:
-    logger.info(f"run_flow invoked for user {user_id}")
+    logger.info(f"run_flow invoked for {user_id}")
 
-    # 1. Crisis detection (hard stop)
+    # Rate limit (non-crisis only)
+    if not rate_limit(user_id):
+        return "💙 Let’s slow things down a bit so I can support you properly."
+
+    # Crisis detection
     crisis, keywords = is_crisis(user_input)
     if crisis:
+        increment_escalation(user_id)
         try:
-            supabase = get_supabase()
-            supabase.table("crisis_logs").insert({
+            get_supabase().table("crisis_logs").insert({
                 "user_id": user_id,
                 "input_text": user_input[:500],
-                "detected_keywords": keywords,
+                "keywords": keywords,
                 "timestamp": datetime.utcnow().isoformat(),
             }).execute()
         except Exception:
             pass
+        return generate_crisis_response()
 
-        return generate_crisis_response(keywords)
+    # Escalation logic
+    escalation = 0
+    if any(k in user_input.lower() for k in ESCALATION_KEYWORDS):
+        escalation = increment_escalation(user_id)
 
-    # 2. Emotion detection
     emotions = detect_emotional_state(user_input)
 
-    # 3. RAG embedding + search
-    vector = embed_text(user_input)
-    redis_context = search_redis_context(vector)
-    therapy_notes = get_therapy_notes(user_id)
+    therapist_requested = any(k in user_input.lower() for k in THERAPIST_KEYWORDS)
+    suggest_therapist = therapist_requested or escalation >= 3
 
-    # STEP A — load conversation memory
-    conversation_memory = load_conversation_memory(user_id)
+    # Context assembly
+    memory = load_conversation_memory(user_id)
+    vector = get_openai().embeddings.create(
+        model="text-embedding-3-small",
+        input=user_input,
+    ).data[0].embedding
 
-    # 4. Build structured context
-    context_parts = []
+    context = "\n".join(memory) if memory else "No prior context."
 
-    if conversation_memory:
-        context_parts.append(
-            "Recent conversation:\n" + "\n".join(conversation_memory)
-        )
-
-    if redis_context:
-        context_parts.append(
-            "Relevant therapeutic knowledge:\n" + "\n".join(redis_context)
-        )
-
-    if therapy_notes:
-        context_parts.append(
-            "Prior therapy notes:\n" + "\n".join(therapy_notes)
-        )
-
-    context = "\n\n".join(context_parts) or "No prior context."
-
-    # 5. Prompt
     prompt = f"""
-You are Therafam AI, a compassionate, ethical mental health assistant.
+You are Therafam AI, a compassionate and ethical mental health assistant.
 
-Guidelines:
-- Be empathetic and non-judgmental
-- Offer practical coping strategies when appropriate
-- Never encourage harm
-- If risk increases, encourage professional support
+Rules:
+- Be empathetic and grounded
+- Never normalize self-harm
+- Encourage professional help when distress escalates
 
 Context:
 {context}
 
-Detected emotions: {', '.join(emotions) if emotions else 'unspecified'}
+Detected emotions: {', '.join(emotions) or 'unspecified'}
+Escalation level: {escalation}
 
 User:
 {user_input}
 """
 
-    # 6. Completion
-    client = get_openai()
-    completion = client.chat.completions.create(
+    completion = get_openai().chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a supportive mental health AI."},
@@ -277,11 +229,11 @@ User:
 
     response = completion.choices[0].message.content.strip()
 
-    # STEP A — persist memory
-    save_conversation_turn(
-        user_id=user_id,
-        user_msg=user_input,
-        ai_msg=response,
-    )
+    if suggest_therapist:
+        response += (
+            "\n\n💙 **Additional support**\n"
+            "Would you like help connecting with a licensed therapist?"
+        )
 
+    save_conversation_turn(user_id, user_input, response)
     return response
