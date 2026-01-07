@@ -29,7 +29,7 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
 # ============================================================================
-# LAZY CLIENT FACTORIES (CRITICAL FIX)
+# LAZY CLIENT FACTORIES (CRITICAL FOR RAILWAY / GUNICORN)
 # ============================================================================
 
 def get_supabase():
@@ -42,7 +42,7 @@ def get_redis():
         port=REDIS_PORT,
         password=REDIS_PASSWORD,
         username="default",
-        decode_responses=False,  # required for vectors
+        decode_responses=False,  # required for vectors + memory bytes
     )
 
 
@@ -80,7 +80,7 @@ def detect_emotional_state(user_input: str) -> List[str]:
     return emotions
 
 # ============================================================================
-# CONTEXT HELPERS (SAFE + ISOLATED)
+# CONTEXT HELPERS (SUPABASE)
 # ============================================================================
 
 def get_mood_context(user_id: str) -> Dict:
@@ -119,6 +119,39 @@ def get_therapy_notes(user_id: str) -> List[str]:
         return []
 
 # ============================================================================
+# STEP A — CONVERSATION MEMORY (REDIS)
+# ============================================================================
+
+MEMORY_TTL_SECONDS = 60 * 60 * 24  # 24 hours
+MAX_MEMORY_TURNS = 6  # user + AI pairs
+
+
+def load_conversation_memory(user_id: str) -> List[str]:
+    try:
+        r = get_redis()
+        key = f"memory:{user_id}"
+        messages = r.lrange(key, 0, -1)
+        return [m.decode("utf-8") for m in messages]
+    except Exception as e:
+        logger.warning(f"Memory load failed: {e}")
+        return []
+
+
+def save_conversation_turn(user_id: str, user_msg: str, ai_msg: str):
+    try:
+        r = get_redis()
+        key = f"memory:{user_id}"
+
+        r.rpush(key, f"User: {user_msg}")
+        r.rpush(key, f"Therafam AI: {ai_msg}")
+
+        # keep only last N turns
+        r.ltrim(key, -MAX_MEMORY_TURNS * 2, -1)
+        r.expire(key, MEMORY_TTL_SECONDS)
+    except Exception as e:
+        logger.warning(f"Memory save failed: {e}")
+
+# ============================================================================
 # AI HELPERS
 # ============================================================================
 
@@ -150,20 +183,21 @@ def search_redis_context(vector: bytes, k: int = 5) -> List[str]:
 def generate_crisis_response(_: List[str]) -> str:
     return (
         "🆘 **IMMEDIATE SUPPORT NEEDED**\n\n"
-        "You are not alone. Please contact local emergency services or a crisis line.\n\n"
-        "• US: Call or text **988**\n"
-        "• If in danger, call emergency services immediately\n\n"
+        "You are not alone, and your life matters.\n\n"
+        "• **US**: Call or text **988** (Suicide & Crisis Lifeline)\n"
+        "• **If in immediate danger**, call emergency services now\n\n"
+        "If you can, reach out to someone you trust and stay connected.\n\n"
         "I care about your safety."
     )
 
 # ============================================================================
-# MAIN FLOW (SAFE FOR PRODUCTION)
+# MAIN FLOW (PRODUCTION SAFE)
 # ============================================================================
 
 def run_flow(user_input: str, user_id: str = "anonymous") -> str:
     logger.info(f"run_flow invoked for user {user_id}")
 
-    # 1. Crisis check
+    # 1. Crisis detection (hard stop)
     crisis, keywords = is_crisis(user_input)
     if crisis:
         try:
@@ -182,36 +216,72 @@ def run_flow(user_input: str, user_id: str = "anonymous") -> str:
     # 2. Emotion detection
     emotions = detect_emotional_state(user_input)
 
-    # 3. Embedding + RAG
+    # 3. RAG embedding + search
     vector = embed_text(user_input)
     redis_context = search_redis_context(vector)
     therapy_notes = get_therapy_notes(user_id)
 
-    context = "\n".join(redis_context + therapy_notes) or "No prior context."
+    # STEP A — load conversation memory
+    conversation_memory = load_conversation_memory(user_id)
 
-    # 4. Prompt
+    # 4. Build structured context
+    context_parts = []
+
+    if conversation_memory:
+        context_parts.append(
+            "Recent conversation:\n" + "\n".join(conversation_memory)
+        )
+
+    if redis_context:
+        context_parts.append(
+            "Relevant therapeutic knowledge:\n" + "\n".join(redis_context)
+        )
+
+    if therapy_notes:
+        context_parts.append(
+            "Prior therapy notes:\n" + "\n".join(therapy_notes)
+        )
+
+    context = "\n\n".join(context_parts) or "No prior context."
+
+    # 5. Prompt
     prompt = f"""
-You are Therafam AI, a compassionate mental health assistant.
+You are Therafam AI, a compassionate, ethical mental health assistant.
+
+Guidelines:
+- Be empathetic and non-judgmental
+- Offer practical coping strategies when appropriate
+- Never encourage harm
+- If risk increases, encourage professional support
 
 Context:
 {context}
 
-User emotions: {', '.join(emotions) if emotions else 'unspecified'}
+Detected emotions: {', '.join(emotions) if emotions else 'unspecified'}
 
 User:
 {user_input}
 """
 
-    # 5. Completion
+    # 6. Completion
     client = get_openai()
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a supportive, ethical mental health AI."},
+            {"role": "system", "content": "You are a supportive mental health AI."},
             {"role": "user", "content": prompt},
         ],
         temperature=0.7,
         max_tokens=400,
     )
 
-    return completion.choices[0].message.content.strip()
+    response = completion.choices[0].message.content.strip()
+
+    # STEP A — persist memory
+    save_conversation_turn(
+        user_id=user_id,
+        user_msg=user_input,
+        ai_msg=response,
+    )
+
+    return response
