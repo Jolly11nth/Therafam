@@ -312,6 +312,38 @@ CREATE TABLE ai_conversations (
 );
 
 -- =============================================================================
+-- CRISIS LOGS (AI SAFETY + COMPLIANCE)
+-- =============================================================================
+
+CREATE TABLE crisis_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    input_text TEXT,
+    detected_keywords TEXT[],
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_crisis_logs_user_id ON crisis_logs(user_id);
+CREATE INDEX idx_crisis_logs_created_at ON crisis_logs(created_at);
+
+-- =============================================================================
+-- AI INTERACTION AUDIT LOG
+-- =============================================================================
+
+CREATE TABLE ai_interactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    input_text TEXT,
+    response_text TEXT,
+    emotions TEXT[],
+    escalation_level INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_ai_interactions_user_id ON ai_interactions(user_id);
+CREATE INDEX idx_ai_interactions_created_at ON ai_interactions(created_at);
+
+-- =============================================================================
 -- AI AND VECTOR SEARCH (from your original schema)
 -- =============================================================================
 
@@ -570,6 +602,24 @@ CREATE INDEX idx_revenue_transactions_date ON revenue_transactions(transaction_d
 CREATE INDEX idx_revenue_transactions_status ON revenue_transactions(payment_status);
 
 -- =============================================================================
+-- THERAPIST HANDOFF STATE
+-- =============================================================================
+
+CREATE TABLE therapist_handoffs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (
+        status IN ('suggested', 'requested', 'connected', 'declined')
+    ),
+    escalation_level INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+CREATE INDEX idx_therapist_handoffs_user_id ON therapist_handoffs(user_id);
+
+-- =============================================================================
 -- FUNCTIONS AND TRIGGERS
 -- =============================================================================
 
@@ -658,6 +708,9 @@ CREATE TRIGGER update_therapist_profiles_updated_at BEFORE UPDATE ON therapist_p
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_therapist_handoffs_updated_at BEFORE UPDATE ON therapist_handoffs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_therapy_sessions_updated_at BEFORE UPDATE ON therapy_sessions
