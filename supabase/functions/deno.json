@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "fmt": {
+    "files": {
+      "include": ["**/*.ts", "**/*.tsx"]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "singleQuote": false,
+      "proseWrap": "preserve"
+    }
+  },
+  "lint": {
+    "files": {
+      "include": ["**/*.ts", "**/*.tsx"]
+    },
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "imports": {
+    "hono": "npm:hono@^4.0.0",
+    "hono/": "npm:hono@^4.0.0/",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
+  }
+}
