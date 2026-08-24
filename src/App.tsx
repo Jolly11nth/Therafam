@@ -1,289 +1,282 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import logo from './assets/brand/logo-mark.svg';
-import heroArt from './assets/illustrations/therapy-hero.svg';
-import moodArt from './assets/illustrations/mood-card.svg';
 import { apiBase, supabaseConfigured } from './lib/supabase';
 
-type View = 'home' | 'auth' | 'client' | 'therapist' | 'ai' | 'programs' | 'messages' | 'settings';
-type Role = 'client' | 'therapist';
-type Language = 'en' | 'es';
-
-type NavItem = { id: View; icon: string; label: string };
-
-const copy = {
-  en: {
-    start: 'Start your healing journey',
-    signIn: 'Sign in',
-    subtitle:
-      'Personalized therapy support for families, clients, and clinicians—grounded in CBT, compassionate AI, and secure care coordination.'
-  },
-  es: {
-    start: 'Comienza tu camino de bienestar',
-    signIn: 'Iniciar sesión',
-    subtitle:
-      'Apoyo terapéutico personalizado para familias, clientes y terapeutas con CBT, IA compasiva y coordinación segura.'
-  }
-};
-
-const cards = [
-  ['Mood tracking', 'Daily check-ins, trends, and personalized coping recommendations.'],
-  ['Therapist matching', 'Verified providers, secure appointments, and collaborative care plans.'],
-  ['Guided programs', 'CBT lessons, breathwork, journaling, and family communication skills.']
-];
-
-const programs = ['CBT foundations', 'Family communication', 'Sleep reset', 'Mindful parenting', 'Anxiety toolkit', 'Crisis safety plan'];
+type View = 'landing' | 'auth' | 'therapist' | 'client' | 'ai' | 'programs' | 'messages' | 'settings';
+type AuthMode = 'signin' | 'signup';
 
 export default function App() {
-  const [view, setView] = useState<View>('home');
-  const [role, setRole] = useState<Role>('client');
-  const [dark, setDark] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
-  const [mood, setMood] = useState(7);
-
-  const navItems = useMemo<NavItem[]>(
-    () => [
-      { id: 'home', icon: '⌂', label: 'Home' },
-      { id: 'client', icon: '♡', label: 'Client' },
-      { id: 'therapist', icon: '◉', label: 'Therapist' },
-      { id: 'ai', icon: '✦', label: 'AI Chat' },
-      { id: 'programs', icon: '▶', label: 'Programs' },
-      { id: 'messages', icon: '✉', label: 'Messages' },
-      { id: 'settings', icon: '⚙', label: 'Settings' }
-    ],
-    []
-  );
-
-  const t = copy[language];
+  const [view, setView] = useState<View>('landing');
+  const [authMode, setAuthMode] = useState<AuthMode>('signin');
+  const [language, setLanguage] = useState('English');
 
   return (
-    <main className={dark ? 'app dark' : 'app'}>
-      <aside className="rail" aria-label="Primary navigation">
-        <button className="brand" onClick={() => setView('home')}>
-          <img src={logo} alt="Therafam logo" />
-          <span>Therafam</span>
-        </button>
+    <main className="app">
+      {view === 'landing' && (
+        <Landing
+          language={language}
+          setLanguage={setLanguage}
+          onLogin={() => { setAuthMode('signin'); setView('auth'); }}
+          onSignup={() => { setAuthMode('signup'); setView('auth'); }}
+        />
+      )}
 
-        {navItems.map((item) => (
-          <button key={item.id} className={view === item.id ? 'active' : ''} onClick={() => setView(item.id)}>
-            <span className="navIcon">{item.icon}</span>
-            <span>{item.label}</span>
-          </button>
-        ))}
+      {view === 'auth' && (
+        <AuthScreen
+          mode={authMode}
+          setMode={setAuthMode}
+          onBack={() => setView('landing')}
+          onTherapist={() => setView('therapist')}
+          onContinue={() => setView('client')}
+        />
+      )}
 
-        <div className="railBottom">
-          <button onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}>
-            <span className="navIcon">🌐</span>
-            <span>{language.toUpperCase()}</span>
-          </button>
-          <button onClick={() => setDark(!dark)}>
-            <span className="navIcon">{dark ? '☀' : '☾'}</span>
-            <span>Theme</span>
-          </button>
-        </div>
-      </aside>
+      {view === 'therapist' && (
+        <TherapistAuth
+          onBack={() => setView('landing')}
+          onClient={() => setView('auth')}
+          onContinue={() => setView('therapist')}
+        />
+      )}
 
-      <section className="canvas">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">Secure mental health platform</p>
-            <h1>{t.start}</h1>
-          </div>
-          <button className="pill" onClick={() => setView('auth')}>
-            {t.signIn} <span>›</span>
-          </button>
-        </header>
-
-        {view === 'home' && <HomeView subtitle={t.subtitle} onNavigate={setView} />}
-        {view === 'auth' && <AuthView role={role} setRole={setRole} onContinue={() => setView(role)} />}
-        {view === 'client' && <ClientView mood={mood} setMood={setMood} />}
-        {view === 'therapist' && <TherapistView />}
-        {view === 'ai' && <ChatView title="Therafam AI companion" placeholder="Message Therafam AI..." />}
-        {view === 'programs' && <ProgramsView />}
-        {view === 'messages' && <MessagesView />}
-        {view === 'settings' && (
-          <SettingsView language={language} setLanguage={setLanguage} dark={dark} setDark={setDark} />
-        )}
-      </section>
+      {view === 'client' && <ClientView onHome={() => setView('landing')} />}
+      {view === 'ai' && <SimplePage title="Therafam AI" onBack={() => setView('landing')} />}
+      {view === 'programs' && <SimplePage title="Programs & Lessons" onBack={() => setView('landing')} />}
+      {view === 'messages' && <SimplePage title="Secure Messages" onBack={() => setView('landing')} />}
+      {view === 'settings' && <SimplePage title="Settings" onBack={() => setView('landing')} />}
     </main>
   );
 }
 
-function HomeView({ subtitle, onNavigate }: { subtitle: string; onNavigate: (view: View) => void }) {
+function Brand({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={compact ? 'brand-lockup compact' : 'brand-lockup'}>
+      <img src={logo} alt="" />
+      <span>Therafam</span>
+    </div>
+  );
+}
+
+function Landing({
+  language,
+  setLanguage,
+  onLogin,
+  onSignup
+}: {
+  language: string;
+  setLanguage: (value: string) => void;
+  onLogin: () => void;
+  onSignup: () => void;
+}) {
+  return (
+    <section className="landing-shell">
+      <div className="landing-content">
+        <button className="back-button" aria-label="Back">‹</button>
+        <h1>Your Safe Space for Mental<br className="desktop-only" /> Wellness.</h1>
+        <p className="landing-subtitle">
+          Connect with an AI therapist designed to listen, understand, and guide
+          <br className="desktop-only" /> you towards better mental health.
+        </p>
+
+        <div className="landing-logo-card">
+          <Brand />
+        </div>
+
+        <select
+          className="language-select"
+          value={language}
+          onChange={(event) => setLanguage(event.currentTarget.value)}
+          aria-label="Language"
+        >
+          <option>English</option>
+          <option>Español</option>
+        </select>
+
+        <div className="landing-actions">
+          <button className="outline-action" onClick={onLogin}>Login</button>
+          <button className="primary-action" onClick={onSignup}>Sign up</button>
+        </div>
+
+        <button className="link-button guest" onClick={onLogin}>Continue as Guest (Anonymous)</button>
+        <button className="link-button">Explore the app anonymously. Data won't be saved permanently.</button>
+
+        <p className="privacy-copy">
+          Your privacy is important to us, all conversations are end-to-end
+          <br className="desktop-only" /> encrypted.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function AuthScreen({
+  mode,
+  setMode,
+  onBack,
+  onTherapist,
+  onContinue
+}: {
+  mode: AuthMode;
+  setMode: (mode: AuthMode) => void;
+  onBack: () => void;
+  onTherapist: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <section className="auth-shell">
+      <div className="auth-card">
+        <button className="mobile-back" onClick={onBack}>‹</button>
+        <Brand compact />
+
+        <div className="auth-tabs">
+          <button className={mode === 'signin' ? 'tab active' : 'tab'} onClick={() => setMode('signin')}>Sign In</button>
+          <button className={mode === 'signup' ? 'tab active' : 'tab'} onClick={() => setMode('signup')}>Sign Up</button>
+        </div>
+
+        {mode === 'signin' ? (
+          <>
+            <div className="demo-card">
+              <div className="demo-icon">🔑</div>
+              <div>
+                <strong>Demo Account Available</strong>
+                <p>Try the app without signing up using these demo credentials:</p>
+                <p>Email: <b>test@therafam.com</b></p>
+                <p>Password: <b>Test1234!</b></p>
+                <small>⚠️ Demo authentication is offline. Using local fallback mode for demo.</small>
+              </div>
+            </div>
+
+            <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
+              <input aria-label="Email" placeholder="Email" type="email" />
+              <div className="password-field">
+                <input aria-label="Password" placeholder="Password" type="password" />
+                <span>◉</span>
+              </div>
+
+              <div className="auth-links">
+                <button type="button" className="text-link">Forgot Password?</button>
+                <button type="button" className="text-link" onClick={() => setMode('signup')}>Don't have an account? Sign Up</button>
+              </div>
+
+              <button className="full-action" type="submit">Sign In</button>
+            </form>
+
+            <div className="or-divider"><span>or</span></div>
+            <button className="google-action" onClick={onContinue}>Continue with Google</button>
+
+            <p className="therapist-prompt">Are you a mental health professional?</p>
+            <button className="text-link centered" onClick={onTherapist}>Access Therapist Portal</button>
+            <button className="text-link centered" onClick={onBack}>Continue as Guest (Anonymous)</button>
+          </>
+        ) : (
+          <SignupScreen onContinue={onContinue} />
+        )}
+
+        {!supabaseConfigured && (
+          <span className="demo-status">{apiBase ? 'Backend configured' : 'Demo mode'}</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SignupScreen({ onContinue }: { onContinue: () => void }) {
   return (
     <>
-      <section className="hero">
+      <div className="professional-card">
+        <div className="professional-icon">♧</div>
         <div>
-          <div className="badge">🌿 CBT + family systems + AI support</div>
-          <h2>Care that feels warm, intelligent, and human.</h2>
-          <p>{subtitle}</p>
-          <div className="actions">
-            <button onClick={() => onNavigate('auth')}>Create account</button>
-            <button className="ghost" onClick={() => onNavigate('ai')}>
-              Try AI companion
-            </button>
-          </div>
+          <strong>Personalized Access</strong>
+          <p>Licensed Mental Health Providers</p>
         </div>
-        <img src={heroArt} alt="Warm therapy illustration" />
-      </section>
-
-      <section className="grid three" aria-label="Therafam features">
-        {cards.map(([title, body]) => (
-          <article className="card" key={title}>
-            <span className="cardIcon">✦</span>
-            <h3>{title}</h3>
-            <p>{body}</p>
-          </article>
-        ))}
-      </section>
+      </div>
+      <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
+        <input aria-label="Professional email" placeholder="Professional Email" type="email" />
+        <div className="password-field">
+          <input aria-label="Password" placeholder="Password" type="password" />
+          <span>◉</span>
+        </div>
+        <p className="application-copy">Need to apply for access? <button className="text-link">Apply here</button></p>
+        <button className="full-action" type="submit">Access Professional Portal</button>
+      </form>
+      <div className="test-account-card">
+        <button className="small-outline">✎ Test Account <span>Create Account</span></button>
+        <p>Email: therapist@test.com</p>
+        <p>Password: Test1234!</p>
+      </div>
     </>
   );
 }
 
-function AuthView({ role, setRole, onContinue }: { role: Role; setRole: (role: Role) => void; onContinue: () => void }) {
-  return (
-    <section className="auth">
-      <div className="panel">
-        <h2>Welcome back</h2>
-        <p>Sign in securely as a client or therapist. Supabase is used when configured; secrets remain on the server.</p>
-        <div className="seg" role="tablist" aria-label="Account type">
-          <button className={role === 'client' ? 'sel' : ''} onClick={() => setRole('client')}>
-            Client
-          </button>
-          <button className={role === 'therapist' ? 'sel' : ''} onClick={() => setRole('therapist')}>
-            Therapist
-          </button>
-        </div>
-        <label>
-          Email address
-          <input placeholder="maya@example.com" type="email" />
-        </label>
-        <label>
-          Password
-          <input placeholder="••••••••" type="password" />
-        </label>
-        <button onClick={onContinue}>{supabaseConfigured ? 'Continue with Supabase' : 'Continue demo'}</button>
-        <small>{apiBase ? `Backend connected: ${apiBase}` : 'Connect VITE_API_BASE_URL for backend AI chat.'}</small>
-      </div>
-
-      <div className="panel soft">
-        <span className="cardIcon">🛡</span>
-        <h3>Private by design</h3>
-        <p>Email verification, therapist profile review, protected session notes, and crisis escalation UI are ready for production integration.</p>
-      </div>
-    </section>
-  );
-}
-
-function ClientView({ mood, setMood }: { mood: number; setMood: (mood: number) => void }) {
-  return (
-    <section className="dash">
-      <div className="welcome">
-        <h2>Good afternoon, Maya</h2>
-        <p>Your plan today focuses on anxiety relief, family boundaries, and sleep hygiene.</p>
-      </div>
-      <div className="grid two">
-        <article className="card mood">
-          <img src={moodArt} alt="Mood trend illustration" />
-          <h3>How are you feeling?</h3>
-          <input min="1" max="10" type="range" value={mood} onChange={(event) => setMood(Number(event.currentTarget.value))} />
-          <b>{mood}/10 — steady and hopeful</b>
-        </article>
-        <article className="card appointment">
-          <h3>Next appointment</h3>
-          <p className="big">Today · 4:30 PM</p>
-          <p>Video session with Dr. Rivera</p>
-          <button>Join waiting room</button>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function TherapistView() {
-  return (
-    <section className="dash">
-      <h2>Therapist workspace</h2>
-      <div className="grid three">
-        {['8 clients active', '4 sessions today', '3 notes pending'].map((stat) => (
-          <article className="stat" key={stat}>{stat}</article>
-        ))}
-      </div>
-      <article className="card">
-        <h3>Client risk board</h3>
-        {['Maya — improving mood trend', 'Jon — missed check-in', 'Family A — new message'].map((row) => (
-          <p className="row" key={row}>{row}<span>›</span></p>
-        ))}
-      </article>
-    </section>
-  );
-}
-
-function ChatView({ title, placeholder }: { title: string; placeholder: string }) {
-  return (
-    <section className="chat">
-      <h2>{title}</h2>
-      <div className="bubble ai">I can help you reframe thoughts, practice grounding, and decide when to contact your therapist.</div>
-      <div className="bubble me">I feel overwhelmed after an argument.</div>
-      <div className="bubble ai">Let’s slow down. Name one body sensation, one thought, and one need you can express calmly.</div>
-      <div className="composer">
-        <input placeholder={placeholder} />
-        <button>Send</button>
-      </div>
-    </section>
-  );
-}
-
-function ProgramsView() {
-  return (
-    <section>
-      <h2>Programs & lessons</h2>
-      <div className="grid three">
-        {programs.map((program) => (
-          <article className="card program" key={program}>
-            <span className="cardIcon">▶</span>
-            <h3>{program}</h3>
-            <p>Short lesson · guided practice · progress saved</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function MessagesView() {
-  return (
-    <section className="chat">
-      <h2>Secure messages</h2>
-      <div className="bubble ai">Dr. Rivera: Please complete the reflection before our session.</div>
-      <div className="bubble me">Maya: I updated my mood log.</div>
-      <div className="bubble ai">System: Appointment reminder sent.</div>
-      <div className="composer">
-        <input placeholder="Write a secure message..." />
-        <button>Send</button>
-      </div>
-    </section>
-  );
-}
-
-function SettingsView({
-  language,
-  setLanguage,
-  dark,
-  setDark
+function TherapistAuth({
+  onBack,
+  onClient,
+  onContinue
 }: {
-  language: Language;
-  setLanguage: (language: Language) => void;
-  dark: boolean;
-  setDark: (dark: boolean) => void;
+  onBack: () => void;
+  onClient: () => void;
+  onContinue: () => void;
 }) {
   return (
-    <section>
-      <h2>Settings</h2>
-      <article className="card">
-        <p className="row">Language <button onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}>{language === 'en' ? 'English' : 'Español'}</button></p>
-        <p className="row">Theme <button onClick={() => setDark(!dark)}>{dark ? 'Dark' : 'Light'}</button></p>
-        <p className="row">Notifications <button>Enabled</button></p>
-      </article>
+    <section className="auth-shell">
+      <div className="auth-card therapist-card">
+        <button className="mobile-back" onClick={onBack}>‹</button>
+        <Brand compact />
+
+        <div className="auth-tabs">
+          <button className="tab active">Sign In</button>
+          <button className="tab">Apply to Join</button>
+        </div>
+
+        <div className="professional-card">
+          <div className="professional-icon">♧</div>
+          <div>
+            <strong>Professional Access</strong>
+            <p>Licensed Mental Health Providers</p>
+          </div>
+        </div>
+
+        <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
+          <input aria-label="Professional email" placeholder="Professional Email" type="email" />
+          <div className="password-field">
+            <input aria-label="Password" placeholder="Password" type="password" />
+            <span>◉</span>
+          </div>
+          <p className="application-copy">Need to apply for access? <button className="text-link">Apply here</button></p>
+          <button className="full-action" type="submit">Access Professional Portal</button>
+        </form>
+
+        <div className="or-divider"><span>or</span></div>
+
+        <div className="test-account-card">
+          <button className="small-outline">✎ Test Account <span>Create Account</span></button>
+          <p>Email: therapist@test.com · Password: Test1234!</p>
+        </div>
+
+        <button className="text-link centered" onClick={onClient}>Return to Client Sign In</button>
+      </div>
+    </section>
+  );
+}
+
+function ClientView({ onHome }: { onHome: () => void }) {
+  return (
+    <section className="simple-page">
+      <Brand compact />
+      <h1>Welcome to Therafam</h1>
+      <p>Your secure mental wellness space is ready.</p>
+      <button className="full-action" onClick={onHome}>Return Home</button>
+    </section>
+  );
+}
+
+function SimplePage({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <section className="simple-page">
+      <Brand compact />
+      <h1>{title}</h1>
+      <p>This area is connected to the React application and ready for the next implementation pass.</p>
+      <button className="full-action" onClick={onBack}>Return Home</button>
     </section>
   );
 }
