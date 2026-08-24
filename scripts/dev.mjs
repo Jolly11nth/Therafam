@@ -1,0 +1,3 @@
+import http from 'node:http';import{readFile}from'node:fs/promises';import{extname,join}from'node:path';
+const root=process.argv[2]||'.'; const port=process.env.PORT||5173; const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
+http.createServer(async(req,res)=>{let p=req.url==='/'?'/index.html':req.url; if(root==='.') p=p==='/index.html'?'/index.html':p.replace('/assets/main.js','/src/main.ts').replace('/assets/styles.css','/src/styles.css'); try{const b=await readFile(join(root,p.split('?')[0]));res.writeHead(200,{'content-type':types[extname(p)]||'text/plain'});res.end(b)}catch{res.writeHead(404);res.end('not found')}}).listen(port,()=>console.log(`Therafam preview on http://localhost:${port}`));
