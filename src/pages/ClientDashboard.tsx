@@ -1,54 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import Brand from '../components/Brand';
 import { getMoodEntries, getPrograms, getStoredUserId, type MoodEntry, type Program } from '../lib/therafamApi';
-
-type Props = {
-  onNavigate: (view: 'mood' | 'ai' | 'programs' | 'messages' | 'settings') => void;
-  onHome: () => void;
-};
-
-const demoPrograms: Program[] = [
-  { id: 'demo-anxiety', title: 'Understanding Anxiety', description: 'Practical tools for understanding stress and building everyday coping skills.', category: 'anxiety', difficulty_level: 'beginner', estimated_duration_days: 14, total_lessons: 3 },
-  { id: 'demo-resilience', title: 'Building Resilience', description: 'Build emotional resilience and healthier ways to respond to life’s challenges.', category: 'stress', difficulty_level: 'intermediate', estimated_duration_days: 21, total_lessons: 2 },
-];
-
-export default function ClientDashboard({ onNavigate, onHome }: Props) {
-  const [programs, setPrograms] = useState<Program[]>(demoPrograms);
-  const [moods, setMoods] = useState<MoodEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const userId = getStoredUserId();
-
-  useEffect(() => {
-    let active = true;
-    Promise.allSettled([getPrograms(), userId ? getMoodEntries(userId, 7) : Promise.resolve([])])
-      .then(([programResult, moodResult]) => {
-        if (!active) return;
-        if (programResult.status === 'fulfilled' && programResult.value.length) setPrograms(programResult.value);
-        if (moodResult.status === 'fulfilled') setMoods(moodResult.value);
-      })
-      .finally(() => active && setLoading(false));
-    return () => { active = false; };
-  }, [userId]);
-
-  const latestMood = moods[0];
-  const averageMood = useMemo(() => moods.length ? (moods.reduce((sum, item) => sum + item.mood_value, 0) / moods.length).toFixed(1) : null, [moods]);
-
-  return (
-    <section className="workspace-shell">
-      <header className="workspace-topbar">
-        <button className="workspace-brand" onClick={onHome} aria-label="Go home"><Brand compact /></button>
-        <div className="workspace-top-actions"><button className="icon-action" onClick={() => onNavigate('settings')} aria-label="Settings">⚙</button><button className="avatar-button" onClick={() => onNavigate('settings')}>TF</button></div>
-      </header>
-      <div className="workspace-content">
-        <div className="workspace-heading"><div><span className="eyebrow">Your wellness space</span><h1>Welcome back</h1><p>A calm place to check in, learn, and connect with support.</p></div><button className="primary-action" onClick={() => onNavigate('ai')}>Talk to Therafam AI</button></div>
-        <div className="dashboard-grid">
-          <article className="dashboard-card mood-card"><div className="card-heading"><span>Today’s check-in</span><span className="soft-badge">Private</span></div><div className="mood-score">{latestMood ? `${latestMood.mood_value}/5` : '—'}</div><p>{latestMood ? `You logged ${latestMood.mood_label} today.` : 'You haven’t checked in today.'}</p><button className="outline-action" onClick={() => onNavigate('mood')}>Start a check-in</button></article>
-          <article className="dashboard-card progress-card"><div className="card-heading"><span>Recent mood trend</span><span className="trend-value">{averageMood ?? '—'}</span></div><div className="mini-bars" aria-label="Recent mood trend">{(moods.length ? moods.slice(0, 7).reverse() : [2, 3, 3, 4, 3, 4, 4]).map((item, index) => { const value = typeof item === 'number' ? item : item.mood_value; return <span key={index} style={{ height: `${Math.max(18, value * 18)}%` }} />; })}</div><p>Small check-ins help you notice patterns over time.</p><button className="text-link" onClick={() => onNavigate('mood')}>View mood history</button></article>
-          <article className="dashboard-card next-card"><div className="card-heading"><span>Next step</span><span>→</span></div><h3>Keep your progress moving</h3><p>Continue a self-help program or start a private AI conversation.</p><button className="ghost" onClick={() => onNavigate('programs')}>Explore programs</button></article>
-        </div>
-        <section className="section-block"><div className="section-title-row"><div><span className="eyebrow">Self-help</span><h2>Recommended for you</h2></div><button className="text-link" onClick={() => onNavigate('programs')}>View all</button></div><div className="program-grid">{programs.slice(0, 3).map((program) => <article className="program-card" key={program.id}><span className="program-category">{program.category}</span><h3>{program.title}</h3><p>{program.description}</p><div className="program-meta"><span>{program.total_lessons ?? 0} lessons</span><span>{program.estimated_duration_days ?? '—'} days</span></div><button className="outline-action" onClick={() => onNavigate('programs')}>Open program</button></article>)}</div>{loading && <p className="loading-copy">Loading your latest data…</p>}</section>
-        <section className="quick-actions"><button onClick={() => onNavigate('ai')}><strong>AI support</strong><span>Start a private conversation</span></button><button onClick={() => onNavigate('mood')}><strong>Mood check-in</strong><span>Log today’s wellbeing snapshot</span></button><button onClick={() => onNavigate('messages')}><strong>Messages</strong><span>View secure conversations</span></button></section>
-      </div>
-    </section>
-  );
+type Props={onNavigate:(view:'mood'|'ai'|'programs'|'messages'|'settings'|'support')=>void;onHome:()=>void};
+const demoPrograms:Program[]=[{id:'demo-anxiety',title:'Understanding Anxiety',description:'Practical tools for understanding stress and building everyday coping skills.',category:'anxiety',difficulty_level:'beginner',estimated_duration_days:14,total_lessons:3},{id:'demo-resilience',title:'Building Resilience',description:'Build emotional resilience and healthier ways to respond to life’s challenges.',category:'stress',difficulty_level:'intermediate',estimated_duration_days:21,total_lessons:2}];
+export default function ClientDashboard({onNavigate,onHome}:Props){
+ const [programs,setPrograms]=useState<Program[]>(demoPrograms),[moods,setMoods]=useState<MoodEntry[]>([]),[loading,setLoading]=useState(true);const userId=getStoredUserId();
+ useEffect(()=>{let active=true;Promise.allSettled([getPrograms(),userId?getMoodEntries(userId,7):Promise.resolve([])]).then(([p,m])=>{if(!active)return;if(p.status==='fulfilled'&&p.value.length)setPrograms(p.value);if(m.status==='fulfilled')setMoods(m.value)}).finally(()=>active&&setLoading(false));return()=>{active=false}},[userId]);
+ const latestMood=moods[0],averageMood=useMemo(()=>moods.length?(moods.reduce((s,i)=>s+i.mood_value,0)/moods.length).toFixed(1):null,[moods]);
+ return <section className="workspace-shell"><header className="workspace-topbar"><button className="workspace-brand" onClick={onHome} aria-label="Go home"><Brand compact/></button><div className="workspace-top-actions"><button className="icon-action" onClick={()=>onNavigate('support')} aria-label="Support" title="Support">?</button><button className="avatar-button" onClick={()=>onNavigate('settings')} aria-label="Open profile settings">TF</button></div></header><div className="workspace-content"><div className="workspace-heading"><div><span className="eyebrow">Your wellness space</span><h1>Welcome back</h1><p>A calm place to check in, learn, and connect with support.</p></div><button className="primary-action" onClick={()=>onNavigate('ai')}>Talk to Therafam AI</button></div><div className="dashboard-grid">
+ <article className="dashboard-card mood-card"><div className="card-heading"><span>Today’s check-in</span><span className="soft-badge">Private</span></div><div className="mood-score">{latestMood?`${latestMood.mood_value}/5`:'—'}</div><p>{latestMood?`You logged ${latestMood.mood_label} today.`:'You haven’t checked in today.'}</p><button className="outline-action" onClick={()=>onNavigate('mood')}>Start a check-in</button></article>
+ <article className="dashboard-card progress-card"><div className="card-heading"><span>Recent mood trend</span><span className="trend-value">{averageMood??'—'}</span></div><div className="mini-bars" aria-label="Recent mood trend">{(moods.length?moods.slice(0,7).reverse():[2,3,3,4,3,4,4]).map((item,index)=>{const value=typeof item==='number'?item:item.mood_value;return <span key={index} style={{height:`${Math.max(18,value*18)}%`}}/>})}</div><p>Small check-ins help you notice patterns over time.</p><button className="text-link" onClick={()=>onNavigate('mood')}>View mood history</button></article>
+ <article className="dashboard-card next-card"><div className="card-heading"><span>Next step</span><span>→</span></div><h3>Keep your progress moving</h3><p>Continue a self-help program or start a private AI conversation.</p><button className="ghost" onClick={()=>onNavigate('programs')}>Explore programs</button></article></div>
+ <section className="section-block"><div className="section-title-row"><div><span className="eyebrow">Self-help</span><h2>Recommended for you</h2></div><button className="text-link" onClick={()=>onNavigate('programs')}>View all</button></div><div className="program-grid">{programs.slice(0,3).map(program=><article className="program-card" key={program.id}><span className="program-category">{program.category}</span><h3>{program.title}</h3><p>{program.description}</p><div className="program-meta"><span>{program.total_lessons??0} lessons</span><span>{program.estimated_duration_days??'—'} days</span></div><button className="outline-action" onClick={()=>onNavigate('programs')}>Open program</button></article>)}</div>{loading&&<p className="loading-copy">Loading your latest data…</p>}</section>
+ <section className="quick-actions"><button onClick={()=>onNavigate('ai')}><strong>AI support</strong><span>Start a private conversation</span></button><button onClick={()=>onNavigate('mood')}><strong>Mood check-in</strong><span>Log today’s wellbeing snapshot</span></button><button onClick={()=>onNavigate('messages')}><strong>Messages</strong><span>View secure conversations</span></button><button onClick={()=>onNavigate('support')}><strong>Support</strong><span>Get help with Therafam</span></button></section></div></section>;
 }
