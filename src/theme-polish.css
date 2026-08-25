@@ -1,0 +1,226 @@
+/* Therafam visual polish layer
+   Keeps the existing component styles intact while adding a consistent
+   interaction system and stronger visual hierarchy. */
+
+:root {
+  --tf-bg-deep: #dcefeb;
+  --tf-surface: #ffffff;
+  --tf-surface-soft: #f4fbf9;
+  --tf-teal-strong: #4f9f91;
+  --tf-teal-dark: #34776e;
+  --tf-text-strong: #245b58;
+  --tf-text-muted: #5f8581;
+  --tf-border-soft: #c2ddd7;
+  --tf-focus: rgba(79, 159, 145, 0.28);
+  --tf-shadow: 0 12px 30px rgba(38, 92, 87, 0.10);
+  --tf-shadow-hover: 0 16px 36px rgba(38, 92, 87, 0.16);
+}
+
+/* ---------------------------------------------------------------
+   BUTTON INTERACTION SYSTEM
+   Constant → hover → pressed/clicked → keyboard focus
+   --------------------------------------------------------------- */
+button,
+a,
+select,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  transition:
+    transform 160ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+button:not(:disabled):active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--tf-focus);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+/* Primary actions */
+.primary-action,
+.full-action,
+.workspace-shell .primary-action,
+.workspace-shell .full-action {
+  background: linear-gradient(135deg, var(--tf-teal-strong), #63ad9f);
+  border-color: var(--tf-teal-strong);
+  box-shadow: 0 7px 18px rgba(79, 159, 145, 0.22);
+}
+
+.primary-action:not(:disabled):hover,
+.full-action:not(:disabled):hover,
+.workspace-shell .primary-action:not(:disabled):hover,
+.workspace-shell .full-action:not(:disabled):hover {
+  background: linear-gradient(135deg, var(--tf-teal-dark), var(--tf-teal-strong));
+  box-shadow: 0 11px 24px rgba(79, 159, 145, 0.30);
+}
+
+/* Outline / secondary actions */
+.outline-action,
+.google-action,
+.small-outline,
+.ghost,
+.icon-action {
+  transition:
+    transform 160ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.outline-action:not(:disabled):hover,
+.google-action:not(:disabled):hover,
+.small-outline:not(:disabled):hover,
+.ghost:not(:disabled):hover,
+.icon-action:not(:disabled):hover {
+  color: var(--tf-teal-dark);
+  background: var(--tf-surface-soft);
+  border-color: var(--tf-teal-strong);
+  box-shadow: 0 7px 18px rgba(38, 92, 87, 0.10);
+}
+
+/* Text/link buttons should feel clickable without floating */
+.link-button:not(:disabled):hover,
+.text-link:not(:disabled):hover {
+  color: var(--tf-teal-dark);
+  text-decoration: underline;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------
+   STRONGER, CLEANER APP SURFACES
+   --------------------------------------------------------------- */
+.app,
+.workspace-shell {
+  background:
+    radial-gradient(circle at 88% 5%, rgba(171, 224, 213, 0.34), transparent 27%),
+    linear-gradient(145deg, #e4f2ef 0%, #eef8f6 48%, #e8f1f8 100%);
+}
+
+.landing-content,
+.auth-card {
+  background: rgba(238, 248, 246, 0.96);
+}
+
+.landing-logo-card {
+  background: linear-gradient(145deg, rgba(213, 239, 233, 0.88), rgba(245, 251, 250, 0.94));
+  border: 1px solid rgba(121, 184, 173, 0.55);
+  border-radius: 18px;
+  box-shadow: var(--tf-shadow);
+}
+
+.language-select,
+.auth-form > input,
+.password-field input {
+  border-color: #a8cec7;
+  box-shadow: 0 2px 7px rgba(47, 105, 102, 0.04);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.language-select:hover,
+.auth-form > input:hover,
+.password-field input:hover {
+  border-color: var(--tf-teal-strong);
+}
+
+.language-select:focus,
+.auth-form > input:focus,
+.password-field input:focus {
+  border-color: var(--tf-teal-strong);
+  box-shadow: 0 0 0 4px var(--tf-focus);
+}
+
+/* ---------------------------------------------------------------
+   WORKSPACE CARDS — more contrast, hierarchy and depth
+   --------------------------------------------------------------- */
+.dashboard-card,
+.program-card,
+.settings-card,
+.messages-card,
+.program-detail,
+.ai-info-card,
+.chat-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: var(--tf-border-soft);
+  box-shadow: var(--tf-shadow);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.dashboard-card:hover,
+.program-card:hover,
+.settings-card:hover,
+.messages-card:hover,
+.program-detail:hover,
+.ai-info-card:hover,
+.chat-panel:hover {
+  transform: translateY(-3px);
+  border-color: #a9d0c9;
+  box-shadow: var(--tf-shadow-hover);
+}
+
+.workspace-heading h1,
+.simple-page h1 {
+  color: var(--tf-text-strong);
+}
+
+.workspace-heading p,
+.dashboard-card p {
+  color: var(--tf-text-muted);
+}
+
+.soft-badge,
+.verified-badge {
+  background: #dff1ed;
+  color: var(--tf-teal-dark);
+}
+
+.avatar-button {
+  background: linear-gradient(135deg, var(--tf-teal-strong), #67ad9f);
+  box-shadow: 0 6px 14px rgba(79, 159, 145, 0.22);
+}
+
+.avatar-button:hover {
+  box-shadow: 0 9px 19px rgba(79, 159, 145, 0.30);
+}
+
+/* Navigation controls should have a subtle lift but not feel jumpy. */
+.workspace-brand:hover,
+.back-button:hover,
+.mobile-back:hover {
+  transform: none;
+}
+
+/* Respect reduced-motion preferences for all interaction polish. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
