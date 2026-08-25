@@ -42,11 +42,16 @@ export type AppSettings = {
   auto_save_chat: boolean;
 };
 
-export type ChatMessage = {
+export type UserProfile = {
   id?: string;
-  role: 'user' | 'assistant';
-  content: string;
-  created_at?: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  profile_picture_url: string;
+  bio: string;
+  timezone: string;
+  language_preference: string;
 };
 
 export async function getHealth() {
@@ -57,17 +62,8 @@ export async function getHealth() {
 }
 
 export async function sendAiMessage(message: string, history: ChatMessage[] = [], userId?: string) {
-  if (!apiBase) {
-    return {
-      response: 'I’m here with you. The AI service is currently in demo mode, but your message was received. Connect the backend to enable live responses.',
-      demo: true,
-    };
-  }
-  const response = await fetch(`${apiBase}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history, user_id: userId ?? null }),
-  });
+  if (!apiBase) return { response: 'I’m here with you. The AI service is currently in demo mode, but your message was received. Connect the backend to enable live responses.', demo: true };
+  const response = await fetch(`${apiBase}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, history, user_id: userId ?? null }) });
   if (!response.ok) throw new Error(`AI request failed with ${response.status}`);
   return response.json() as Promise<{ response: string; conversation_id?: string; crisis?: boolean }>;
 }
@@ -110,14 +106,39 @@ export async function getSettings(userId: string) {
 export async function saveSettings(settings: AppSettings) {
   if (!supabase) throw new Error('Supabase is not configured');
   const existing = await getSettings(settings.user_id);
-  const query = existing?.id
-    ? supabase.from('user_settings').update(settings).eq('id', existing.id)
-    : supabase.from('user_settings').insert(settings);
+  const query = existing?.id ? supabase.from('user_settings').update(settings).eq('id', existing.id) : supabase.from('user_settings').insert(settings);
   const { data, error } = await query.select().single();
   if (error) throw error;
   return data as AppSettings;
 }
 
-export function getStoredUserId() {
-  return localStorage.getItem('therafam:userId') ?? '';
+export async function getUserProfile(userId: string) {
+  if (!supabase || !userId) return null;
+  const { data, error } = await supabase.from('user_profiles').select('id,user_id,first_name,last_name,phone_number,profile_picture_url,bio,timezone,language_preference').eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  return data as UserProfile | null;
 }
+
+export async function saveUserProfile(profile: UserProfile) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  const payload = { ...profile, updated_at: new Date().toISOString() };
+  const { data, error } = await supabase.from('user_profiles').upsert(payload, { onConflict: 'user_id' }).select().single();
+  if (error) throw error;
+  return data as UserProfile;
+}
+
+export async function uploadProfileImage(userId: string, file: File) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  if (!file.type.startsWith('image/')) throw new Error('Please select an image file.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Profile images must be 5 MB or smaller.');
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `${userId}/avatar-${Date.now()}.${extension}`;
+  const { error: uploadError } = await supabase.storage.from('profile-images').upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+  if (uploadError) throw uploadError;
+  const { data } = supabase.storage.from('profile-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export function getStoredUserId() { return localStorage.getItem('therafam:userId') ?? ''; }
+
+export type ChatMessage = { id?: string; role: 'user' | 'assistant'; content: string; created_at?: string };
