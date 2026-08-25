@@ -1,8 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import TherafamApp from './TherafamApp';
+import { initializePreferences } from './lib/preferences';
 import './styles.css';
 import './theme-polish.css';
+
+initializePreferences();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
