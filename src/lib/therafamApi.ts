@@ -27,6 +27,7 @@ export type MoodEntry = {
 };
 
 export type AppSettings = {
+  id?: string;
   user_id: string;
   email_notifications: boolean;
   push_notifications: boolean;
@@ -109,7 +110,7 @@ export async function getSettings(userId: string) {
 export async function saveSettings(settings: AppSettings) {
   if (!supabase) throw new Error('Supabase is not configured');
   const existing = await getSettings(settings.user_id);
-  const query = existing
+  const query = existing?.id
     ? supabase.from('user_settings').update(settings).eq('id', existing.id)
     : supabase.from('user_settings').insert(settings);
   const { data, error } = await query.select().single();
