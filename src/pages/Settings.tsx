@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/Brand';
 import { getSettings, getStoredUserId, getUserProfile, saveSettings, saveUserProfile, uploadProfileImage, type AppSettings, type UserProfile } from '../lib/therafamApi';
 import { applyTheme, getLanguage, getTheme, setLanguage, type Language, type Theme } from '../lib/preferences';
+import { supabase } from '../lib/supabase';
 
-type Props = { onBack: () => void; onHome: () => void };
+type Props = { onBack: () => void; onHome: () => void; onLogout: () => void };
 
 const defaults: AppSettings = {
   user_id: '', email_notifications: true, push_notifications: true, sms_notifications: false,
@@ -15,7 +16,7 @@ const profileDefaults: UserProfile = {
   user_id: '', first_name: '', last_name: '', phone_number: '', profile_picture_url: '', bio: '', timezone: 'Africa/Lagos', language_preference: getLanguage(),
 };
 
-export default function Settings({ onBack, onHome }: Props) {
+export default function Settings({ onBack, onHome, onLogout }: Props) {
   const userId = getStoredUserId();
   const [settings, setSettings] = useState<AppSettings>({ ...defaults, user_id: userId });
   const [profile, setProfile] = useState<UserProfile>({ ...profileDefaults, user_id: userId });
@@ -25,6 +26,7 @@ export default function Settings({ onBack, onHome }: Props) {
   const [saved, setSaved] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -70,6 +72,20 @@ export default function Settings({ onBack, onHome }: Props) {
     finally { setUploading(false); event.target.value = ''; }
   }
 
+  async function handleLogout() {
+    if (!window.confirm('Log out of Therafam?')) return;
+    setLoggingOut(true);
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {
+      // Clear the local session even when the remote sign-out is unavailable.
+    } finally {
+      localStorage.removeItem('therafam:session');
+      localStorage.removeItem('therafam:userId');
+      onLogout();
+    }
+  }
+
   return (
     <section className="workspace-shell">
       <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><div className="workspace-top-actions"><button className="theme-button" onClick={() => update('theme', settings.theme === 'dark' ? 'light' : 'dark')}>{settings.theme === 'dark' ? '☀ Dark' : '☾ Light'}</button><button className="text-link" onClick={onBack}>Back to dashboard</button></div></header>
@@ -101,6 +117,11 @@ export default function Settings({ onBack, onHome }: Props) {
           <section className="settings-card"><h2>Appearance</h2><label className="setting-select"><span>Theme</span><select value={settings.theme} onChange={(e) => update('theme', e.target.value as AppSettings['theme'])}><option value="light">Light</option><option value="dark">Dark</option><option value="auto">System</option></select></label><label className="setting-select"><span>Language</span><select value={settings.language} onChange={(e) => update('language', e.target.value as Language)}><option value="en">English</option><option value="es">Español</option></select></label></section>
         </div>
         <div className="settings-footer"><span>{saved ? 'Settings saved.' : userId ? 'Changes are saved to your account.' : 'Demo mode — sign in to persist settings.'}</span><button className="primary-action" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+
+        <section className="settings-card danger-zone">
+          <div><span className="eyebrow">Account</span><h2>Sign out</h2><p>End your current Therafam session on this device.</p></div>
+          <button className="logout-action" type="button" onClick={handleLogout} disabled={loggingOut}>{loggingOut ? 'Signing out…' : 'Log out'}</button>
+        </section>
       </div>
     </section>
   );
