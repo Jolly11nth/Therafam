@@ -94,19 +94,9 @@ button { cursor: pointer; }
   object-fit: contain;
 }
 
-.brand-lockup:not(.compact) .therafam-logo {
-  width: 238px;
-  max-width: 100%;
-}
-
-.brand-lockup.compact {
-  margin: 0 auto 20px;
-}
-
-.brand-lockup.compact .therafam-logo {
-  width: 150px;
-  max-width: 100%;
-}
+.brand-lockup:not(.compact) .therafam-logo { width: 238px; max-width: 100%; }
+.brand-lockup.compact { margin: 0 auto 20px; }
+.brand-lockup.compact .therafam-logo { width: 150px; max-width: 100%; }
 
 .landing-logo-card {
   width: 235px;
@@ -133,6 +123,8 @@ button { cursor: pointer; }
   font-size: 11px;
 }
 
+.landing-controls { display: flex; justify-content: center; }
+
 .landing-actions {
   display: flex;
   gap: 18px;
@@ -150,82 +142,25 @@ button { cursor: pointer; }
   box-shadow: none;
 }
 
-.outline-action {
-  color: #5e9f96;
-  background: #fff;
-  border: 1px solid #72b7ac;
-}
-
+.outline-action { color: #5e9f96; background: #fff; border: 1px solid #72b7ac; }
 .primary-action,
-.full-action {
-  color: #fff;
-  background: var(--tf-teal);
-  border: 1px solid var(--tf-teal);
-  box-shadow: none;
-}
+.full-action { color: #fff; background: var(--tf-teal); border: 1px solid var(--tf-teal); box-shadow: none; }
 
 .link-button,
-.text-link {
-  border: 0;
-  padding: 0;
-  color: #5c9991;
-  background: transparent;
-  box-shadow: none;
-  font-size: 10px;
-  font-weight: 600;
-}
-
+.text-link { border: 0; padding: 0; color: #5c9991; background: transparent; box-shadow: none; font-size: 10px; font-weight: 600; }
 .guest { margin: 0 auto 5px; display: block; }
 .anonymous-copy { margin: 0; color: #8aaea9; font-size: 8px; line-height: 1.4; }
 .privacy-copy { margin: 6px auto 0; color: #497773; font-size: 10px; line-height: 1.55; }
 
 .auth-shell { align-items: center; }
+.auth-card { padding: 30px 36px 44px; box-shadow: 0 8px 28px rgba(39, 91, 88, .10); }
 
-.auth-card {
-  padding: 30px 36px 44px;
-  box-shadow: 0 8px 28px rgba(39, 91, 88, .10);
-}
-
-.auth-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin: 0 0 22px;
-  background: #edeaf0;
-  border-radius: 9px;
-  overflow: hidden;
-}
-
-.tab {
-  min-height: 34px;
-  padding: 7px;
-  color: #5d8d88;
-  background: transparent;
-  border: 0;
-  border-radius: 9px;
-  box-shadow: none;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.tab.active {
-  color: #467d78;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05);
-}
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: 0 0 22px; background: #edeaf0; border-radius: 9px; overflow: hidden; }
+.tab { min-height: 34px; padding: 7px; color: #5d8d88; background: transparent; border: 0; border-radius: 9px; box-shadow: none; font-size: 10px; font-weight: 600; }
+.tab.active { color: #467d78; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
 
 .demo-card,
-.professional-card {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  text-align: left;
-  margin-bottom: 15px;
-  padding: 12px 13px;
-  background: var(--tf-blue-bg);
-  border: 1px solid var(--tf-blue-border);
-  border-radius: 8px;
-}
-
+.professional-card { display: flex; gap: 10px; align-items: flex-start; text-align: left; margin-bottom: 15px; padding: 12px 13px; background: var(--tf-blue-bg); border: 1px solid var(--tf-blue-border); border-radius: 8px; }
 .demo-icon,
 .professional-icon { width: 20px; flex: 0 0 20px; font-size: 14px; }
 .demo-card strong,
@@ -237,36 +172,21 @@ button { cursor: pointer; }
 
 .auth-form { text-align: left; }
 .auth-form > input,
-.password-field input {
-  width: 100%;
-  height: 42px;
-  padding: 0 10px;
-  color: #315f5d;
-  background: #fff;
-  border: 1px solid #68afa3;
-  border-radius: 5px;
-  outline: none;
-  font-size: 10px;
-}
-
+.password-field input { width: 100%; height: 42px; padding: 0 10px; color: #315f5d; background: #fff; border: 1px solid #68afa3; border-radius: 5px; outline: none; font-size: 10px; }
 .auth-form > input { margin-bottom: 9px; }
 .password-field { position: relative; }
 .password-field input { padding-right: 34px; }
 .password-field span { position: absolute; right: 10px; top: 12px; color: #75a9a3; font-size: 10px; }
-
 .auth-links { display: flex; justify-content: space-between; gap: 12px; margin: 9px 0 14px; }
 .full-action { width: 100%; min-height: 38px; border-radius: 4px; border: 0; font-size: 10px; font-weight: 800; box-shadow: none; }
-
 .or-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; color: #80a8a4; font-size: 9px; }
 .or-divider::before,
 .or-divider::after { content: ''; flex: 1; height: 1px; background: #cfe2df; }
-
 .google-action { width: 100%; height: 38px; color: #3d6f6b; background: #fff; border: 1px solid #68afa3; border-radius: 4px; box-shadow: none; font-size: 10px; }
 .therapist-prompt { margin: 16px 0 4px; color: #4e7d78; font-size: 8px; }
 .centered { display: block; margin: 5px auto; text-align: center; }
 .application-copy { margin: 9px 0 14px; color: #7ba8a2; text-align: center; font-size: 8px; }
 .application-copy .text-link { font-size: 8px; text-decoration: underline; }
-
 .test-account-card { margin-top: 18px; padding: 9px 10px; text-align: left; background: #fff; border: 1px solid #d9e5e2; border-radius: 5px; }
 .small-outline { width: 100%; display: flex; justify-content: space-between; gap: 10px; padding: 7px 8px; color: #3b7771; background: #fff; border: 1px solid #d7e1df; border-radius: 4px; box-shadow: none; font-size: 8px; }
 .small-outline span:last-child { color: #4c9d91; }
@@ -275,6 +195,41 @@ button { cursor: pointer; }
 .simple-page { width: min(100% - 32px, 600px); margin: 50px auto; padding: 40px; text-align: center; background: rgba(255,255,255,.55); border: 1px solid #cde4df; border-radius: 18px; }
 .simple-page h1 { color: #2f6867; }
 .desktop-only { display: inline; }
+
+.landing-anim {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.landing-heading { transform: translate3d(0, -42px, 0); transition: transform 720ms cubic-bezier(.22,1,.36,1), opacity 620ms ease; transition-delay: 80ms; }
+.landing-subtitle { transform: translate3d(72px, 0, 0); transition: transform 760ms cubic-bezier(.22,1,.36,1), opacity 620ms ease; transition-delay: 220ms; }
+.landing-logo-card { transform: scale(.72); transition: transform 820ms cubic-bezier(.22,1,.36,1), opacity 700ms ease; transition-delay: 360ms; }
+.language-select { transform: translate3d(-70px, 0, 0); transition: transform 720ms cubic-bezier(.22,1,.36,1), opacity 620ms ease; transition-delay: 520ms; }
+.landing-actions .outline-action { transform: translate3d(90px, 0, 0); transition: transform 760ms cubic-bezier(.22,1,.36,1), opacity 620ms ease; transition-delay: 670ms; }
+.landing-actions .primary-action { transform: translate3d(-90px, 0, 0); transition: transform 760ms cubic-bezier(.22,1,.36,1), opacity 620ms ease; transition-delay: 730ms; }
+.landing-lower { transform: translate3d(0, 55px, 0); transition: transform 780ms cubic-bezier(.22,1,.36,1), opacity 650ms ease; transition-delay: 900ms; }
+.landing-back { transform: translate3d(-18px, 0, 0); transition: transform 500ms ease, opacity 450ms ease; transition-delay: 40ms; }
+
+.intro-ready .landing-anim {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-anim,
+  .landing-heading,
+  .landing-subtitle,
+  .landing-logo-card,
+  .language-select,
+  .landing-actions .outline-action,
+  .landing-actions .primary-action,
+  .landing-lower,
+  .landing-back {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
 
 @media (max-width: 600px) {
   .landing-shell, .auth-shell { padding: 0; }
@@ -286,7 +241,7 @@ button { cursor: pointer; }
   .landing-logo-card .therafam-logo { width: 165px; max-width: 92%; }
   .brand-lockup.compact .therafam-logo { width: 125px; }
   .language-select { width: 165px; margin-bottom: 24px; height: 28px; font-size: 9px; }
-  .landing-actions { flex-direction: column; gap: 10px; align-items: center; }
+  .landing-actions { flex-direction: row; gap: 14px; align-items: center; }
   .outline-action, .primary-action { width: 88px; height: 35px; font-size: 9px; }
   .link-button { font-size: 8px; }
   .anonymous-copy { font-size: 7px; }
