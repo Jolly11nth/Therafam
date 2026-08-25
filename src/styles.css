@@ -2,25 +2,26 @@
 
 :root {
   font-family: Nunito, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #285d5b;
+  color: #2f6966;
   background: #e8f5f2;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  --tf-bg: #e8f5f2;
+  --tf-teal: #78b7a9;
+  --tf-text: #2f6966;
+  --tf-border: #79b8ad;
+  --tf-blue-bg: #edf7ff;
+  --tf-blue-border: #9bc8ff;
 }
 
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; }
-body { margin: 0; min-width: 320px; background: #e8f5f2; }
-
+body { margin: 0; min-width: 320px; background: var(--tf-bg); }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 
-.app {
-  min-height: 100vh;
-  background: #e8f5f2;
-  color: #285d5b;
-}
+.app { min-height: 100vh; color: var(--tf-text); background: var(--tf-bg); }
 
 .landing-shell,
 .auth-shell {
@@ -28,52 +29,53 @@ button { cursor: pointer; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 18px 16px;
+  padding: 0;
 }
 
 .landing-content,
 .auth-card {
+  position: relative;
   width: min(100%, 505px);
-  min-height: calc(100vh - 36px);
-  background: #e8f5f2;
-  border-radius: 4px;
-  padding: 38px 26px 46px;
+  min-height: 100vh;
+  background: var(--tf-bg);
+  padding: 0 40px 46px;
   text-align: center;
 }
 
-.landing-content {
-  position: relative;
-  padding-top: 82px;
-}
+.landing-content { padding-top: 92px; }
 
 .back-button,
 .mobile-back {
   position: absolute;
-  left: 12px;
-  top: 24px;
-  width: 26px;
-  height: 26px;
+  left: 16px;
+  top: 20px;
+  width: 24px;
+  height: 24px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border: 0;
   background: transparent;
   color: #73b5aa;
-  font-size: 24px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
   box-shadow: none;
 }
 
 .landing-content h1 {
   margin: 0;
-  color: #2f6867;
-  font-size: clamp(28px, 4vw, 38px);
-  line-height: 1.15;
+  color: #326c69;
+  font-size: 38px;
+  line-height: 1.1;
   letter-spacing: -.035em;
   font-weight: 800;
 }
 
 .landing-subtitle {
-  margin: 20px auto 30px;
+  margin: 20px auto 28px;
   max-width: 390px;
-  color: #4b7c79;
+  color: #4b7d79;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -81,27 +83,29 @@ button { cursor: pointer; }
 .brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: #075d61;
-  font-weight: 900;
-  font-size: 30px;
-  letter-spacing: -.045em;
+  justify-content: center;
+  line-height: 0;
 }
 
-.brand-lockup img {
-  width: 64px;
-  height: 64px;
+.therafam-logo {
+  display: block;
+  width: auto;
+  height: auto;
   object-fit: contain;
 }
 
-.brand-lockup.compact {
-  font-size: 20px;
-  margin: 0 auto 22px;
+.brand-lockup:not(.compact) .therafam-logo {
+  width: 238px;
+  max-width: 100%;
 }
 
-.brand-lockup.compact img {
-  width: 32px;
-  height: 32px;
+.brand-lockup.compact {
+  margin: 0 auto 20px;
+}
+
+.brand-lockup.compact .therafam-logo {
+  width: 150px;
+  max-width: 100%;
 }
 
 .landing-logo-card {
@@ -113,18 +117,18 @@ button { cursor: pointer; }
   background: rgba(220, 245, 239, .55);
 }
 
-.landing-logo-card .brand-lockup { font-size: 28px; }
-.landing-logo-card .brand-lockup img { width: 58px; height: 58px; }
+.landing-logo-card .therafam-logo { width: 220px; max-width: 92%; }
 
 .language-select {
   display: block;
-  width: min(100%, 230px);
+  width: 230px;
+  max-width: 100%;
   height: 32px;
   margin: 0 auto 28px;
   padding: 0 9px;
   color: #467674;
   background: #fff;
-  border: 1px solid #73b5aa;
+  border: 1px solid var(--tf-border);
   border-radius: 5px;
   font-size: 11px;
 }
@@ -133,7 +137,7 @@ button { cursor: pointer; }
   display: flex;
   gap: 18px;
   justify-content: center;
-  margin-bottom: 18px;
+  margin-bottom: 17px;
 }
 
 .outline-action,
@@ -143,6 +147,7 @@ button { cursor: pointer; }
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
+  box-shadow: none;
 }
 
 .outline-action {
@@ -154,8 +159,8 @@ button { cursor: pointer; }
 .primary-action,
 .full-action {
   color: #fff;
-  background: #78b7a9;
-  border: 1px solid #78b7a9;
+  background: var(--tf-teal);
+  border: 1px solid var(--tf-teal);
   box-shadow: none;
 }
 
@@ -171,18 +176,12 @@ button { cursor: pointer; }
 }
 
 .guest { margin: 0 auto 5px; display: block; }
-.privacy-copy {
-  margin-top: 7px;
-  color: #497773;
-  font-size: 10px;
-  line-height: 1.55;
-}
+.anonymous-copy { margin: 0; color: #8aaea9; font-size: 8px; line-height: 1.4; }
+.privacy-copy { margin: 6px auto 0; color: #497773; font-size: 10px; line-height: 1.55; }
 
-.auth-shell { align-items: center; padding: 0; }
+.auth-shell { align-items: center; }
+
 .auth-card {
-  position: relative;
-  width: min(100%, 505px);
-  min-height: 100vh;
   padding: 30px 36px 44px;
   box-shadow: 0 8px 28px rgba(39, 91, 88, .10);
 }
@@ -190,9 +189,7 @@ button { cursor: pointer; }
 .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0;
   margin: 0 0 22px;
-  padding: 0;
   background: #edeaf0;
   border-radius: 9px;
   overflow: hidden;
@@ -224,39 +221,19 @@ button { cursor: pointer; }
   text-align: left;
   margin-bottom: 15px;
   padding: 12px 13px;
-  background: #edf7ff;
-  border: 1px solid #9bc8ff;
+  background: var(--tf-blue-bg);
+  border: 1px solid var(--tf-blue-border);
   border-radius: 8px;
 }
 
 .demo-icon,
-.professional-icon {
-  width: 20px;
-  flex: 0 0 20px;
-  font-size: 14px;
-}
-
+.professional-icon { width: 20px; flex: 0 0 20px; font-size: 14px; }
 .demo-card strong,
-.professional-card strong {
-  color: #286c72;
-  font-size: 10px;
-}
-
+.professional-card strong { color: #286c72; font-size: 10px; }
 .demo-card p,
 .professional-card p,
-.test-account-card p {
-  margin: 3px 0 0;
-  color: #467d8a;
-  font-size: 8px;
-  line-height: 1.35;
-}
-
-.demo-card small {
-  display: block;
-  margin-top: 5px;
-  color: #174f9a;
-  font-size: 7px;
-}
+.test-account-card p { margin: 3px 0 0; color: #467d8a; font-size: 8px; line-height: 1.35; }
+.demo-card small { display: block; margin-top: 5px; color: #174f9a; font-size: 7px; }
 
 .auth-form { text-align: left; }
 .auth-form > input,
@@ -273,152 +250,48 @@ button { cursor: pointer; }
 }
 
 .auth-form > input { margin-bottom: 9px; }
-
 .password-field { position: relative; }
 .password-field input { padding-right: 34px; }
-.password-field span {
-  position: absolute;
-  right: 10px;
-  top: 12px;
-  color: #75a9a3;
-  font-size: 10px;
-}
+.password-field span { position: absolute; right: 10px; top: 12px; color: #75a9a3; font-size: 10px; }
 
-.auth-links {
-  display: flex;
-  justify-content: space-between;
-  margin: 9px 0 14px;
-}
+.auth-links { display: flex; justify-content: space-between; gap: 12px; margin: 9px 0 14px; }
+.full-action { width: 100%; min-height: 38px; border-radius: 4px; border: 0; font-size: 10px; font-weight: 800; box-shadow: none; }
 
-.full-action {
-  width: 100%;
-  min-height: 38px;
-  border-radius: 4px;
-  border: 0;
-  font-size: 10px;
-  font-weight: 800;
-  box-shadow: none;
-}
-
-.or-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 18px 0 14px;
-  color: #80a8a4;
-  font-size: 9px;
-}
+.or-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; color: #80a8a4; font-size: 9px; }
 .or-divider::before,
-.or-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #cfe2df;
-}
+.or-divider::after { content: ''; flex: 1; height: 1px; background: #cfe2df; }
 
-.google-action {
-  width: 100%;
-  height: 38px;
-  color: #3d6f6b;
-  background: #fff;
-  border: 1px solid #68afa3;
-  border-radius: 4px;
-  box-shadow: none;
-  font-size: 10px;
-}
-
-.therapist-prompt {
-  margin: 16px 0 4px;
-  color: #4e7d78;
-  font-size: 8px;
-}
-
-.centered {
-  display: block;
-  margin: 5px auto;
-  text-align: center;
-}
-
-.application-copy {
-  margin: 9px 0 14px;
-  color: #7ba8a2;
-  text-align: center;
-  font-size: 8px;
-}
-
+.google-action { width: 100%; height: 38px; color: #3d6f6b; background: #fff; border: 1px solid #68afa3; border-radius: 4px; box-shadow: none; font-size: 10px; }
+.therapist-prompt { margin: 16px 0 4px; color: #4e7d78; font-size: 8px; }
+.centered { display: block; margin: 5px auto; text-align: center; }
+.application-copy { margin: 9px 0 14px; color: #7ba8a2; text-align: center; font-size: 8px; }
 .application-copy .text-link { font-size: 8px; text-decoration: underline; }
 
-.test-account-card {
-  margin-top: 18px;
-  padding: 9px 10px;
-  text-align: left;
-  background: #fff;
-  border: 1px solid #d9e5e2;
-  border-radius: 5px;
-}
+.test-account-card { margin-top: 18px; padding: 9px 10px; text-align: left; background: #fff; border: 1px solid #d9e5e2; border-radius: 5px; }
+.small-outline { width: 100%; display: flex; justify-content: space-between; gap: 10px; padding: 7px 8px; color: #3b7771; background: #fff; border: 1px solid #d7e1df; border-radius: 4px; box-shadow: none; font-size: 8px; }
+.small-outline span:last-child { color: #4c9d91; }
+.demo-status { display: block; margin-top: 14px; color: #8aa9a5; font-size: 7px; }
 
-.small-outline {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 7px 8px;
-  color: #3b7771;
-  background: #fff;
-  border: 1px solid #d7e1df;
-  border-radius: 4px;
-  box-shadow: none;
-  font-size: 8px;
-}
-
-.small-outline span { color: #4c9d91; }
-
-.demo-status {
-  display: block;
-  margin-top: 14px;
-  color: #8aa9a5;
-  font-size: 7px;
-}
-
-.simple-page {
-  width: min(100% - 32px, 600px);
-  margin: 50px auto;
-  padding: 40px;
-  text-align: center;
-  background: rgba(255,255,255,.55);
-  border: 1px solid #cde4df;
-  border-radius: 18px;
-}
-
+.simple-page { width: min(100% - 32px, 600px); margin: 50px auto; padding: 40px; text-align: center; background: rgba(255,255,255,.55); border: 1px solid #cde4df; border-radius: 18px; }
 .simple-page h1 { color: #2f6867; }
-
 .desktop-only { display: inline; }
 
 @media (max-width: 600px) {
-  .landing-shell,
-  .auth-shell { padding: 0; }
-
-  .landing-content,
-  .auth-card {
-    width: 100%;
-    min-height: 100vh;
-    padding-left: 16px;
-    padding-right: 16px;
-    box-shadow: none;
-  }
-
+  .landing-shell, .auth-shell { padding: 0; }
+  .landing-content, .auth-card { width: 100%; min-height: 100vh; padding-left: 16px; padding-right: 16px; box-shadow: none; }
   .landing-content { padding-top: 88px; }
   .landing-content h1 { font-size: 23px; }
   .landing-subtitle { font-size: 9px; max-width: 245px; margin-top: 18px; }
   .landing-logo-card { width: 180px; height: 72px; margin-bottom: 28px; }
-  .landing-logo-card .brand-lockup { font-size: 20px; }
-  .landing-logo-card .brand-lockup img { width: 44px; height: 44px; }
+  .landing-logo-card .therafam-logo { width: 165px; max-width: 92%; }
+  .brand-lockup.compact .therafam-logo { width: 125px; }
   .language-select { width: 165px; margin-bottom: 24px; height: 28px; font-size: 9px; }
   .landing-actions { flex-direction: column; gap: 10px; align-items: center; }
   .outline-action, .primary-action { width: 88px; height: 35px; font-size: 9px; }
   .link-button { font-size: 8px; }
+  .anonymous-copy { font-size: 7px; }
   .privacy-copy { font-size: 8px; max-width: 220px; margin-left: auto; margin-right: auto; }
   .desktop-only { display: none; }
-
   .auth-card { padding: 28px 16px 34px; }
   .auth-card .brand-lockup.compact { margin-bottom: 16px; }
   .auth-tabs { margin-bottom: 18px; }
