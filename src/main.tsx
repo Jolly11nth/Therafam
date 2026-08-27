@@ -5,6 +5,7 @@ import { initializePreferences } from './lib/preferences';
 import './styles.css';
 import './theme-polish.css';
 import './preferences.css';
+import './therapist-interactions.css';
 
 initializePreferences();
 
