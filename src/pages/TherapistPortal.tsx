@@ -4,10 +4,12 @@ import { supabase } from '../lib/supabase';
 import { getStoredUserId } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void };
+type Panel = 'clients' | 'schedule' | 'profile' | 'notes' | 'availability' | 'messages' | null;
 
 export default function TherapistPortal({ onBack, onHome }: Props) {
   const [clientCount, setClientCount] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
+  const [panel, setPanel] = useState<Panel>(null);
   const userId = getStoredUserId();
 
   useEffect(() => {
@@ -15,27 +17,38 @@ export default function TherapistPortal({ onBack, onHome }: Props) {
     Promise.all([
       supabase.from('therapist_client_relationships').select('id', { count: 'exact', head: true }).eq('therapist_id', userId).eq('status', 'active'),
       supabase.from('therapy_sessions').select('id', { count: 'exact', head: true }).eq('therapist_id', userId).eq('status', 'scheduled'),
-    ]).then(([clients, sessions]) => {
-      setClientCount(clients.count ?? 0);
-      setSessionCount(sessions.count ?? 0);
-    });
+    ]).then(([clients, sessions]) => { setClientCount(clients.count ?? 0); setSessionCount(sessions.count ?? 0); });
   }, [userId]);
 
   return (
     <section className="workspace-shell therapist-workspace">
-      <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><button className="text-link" onClick={onBack}>Return to client area</button></header>
+      <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome} aria-label="Go home"><Brand compact /></button><button className="text-link" onClick={onBack}>Return to client area</button></header>
       <div className="workspace-content">
         <div className="workspace-heading"><div><span className="eyebrow">Professional portal</span><h1>Therapist workspace</h1><p>Manage your client relationships, appointments, and professional workflow securely.</p></div><span className="verified-badge">Professional access</span></div>
         <div className="dashboard-grid">
-          <article className="dashboard-card"><span className="eyebrow">Active clients</span><strong className="workspace-stat">{clientCount}</strong><p>Clients currently assigned to your care.</p><button className="outline-action">View clients</button></article>
-          <article className="dashboard-card"><span className="eyebrow">Upcoming sessions</span><strong className="workspace-stat">{sessionCount}</strong><p>Scheduled sessions requiring attention.</p><button className="outline-action">View schedule</button></article>
-          <article className="dashboard-card"><span className="eyebrow">Professional status</span><strong className="status-text">Active</strong><p>Keep your availability and profile information current.</p><button className="outline-action">Manage profile</button></article>
+          <article className="dashboard-card"><span className="eyebrow">Active clients</span><strong className="workspace-stat">{clientCount}</strong><p>Clients currently assigned to your care.</p><button className="outline-action" onClick={() => setPanel('clients')}>View clients</button></article>
+          <article className="dashboard-card"><span className="eyebrow">Upcoming sessions</span><strong className="workspace-stat">{sessionCount}</strong><p>Scheduled sessions requiring attention.</p><button className="outline-action" onClick={() => setPanel('schedule')}>View schedule</button></article>
+          <article className="dashboard-card"><span className="eyebrow">Professional status</span><strong className="status-text">Active</strong><p>Keep your availability and profile information current.</p><button className="outline-action" onClick={() => setPanel('profile')}>Manage profile</button></article>
         </div>
         <div className="therapist-columns">
           <section className="dashboard-card"><div className="card-heading"><strong>Today</strong><span>Schedule</span></div><div className="empty-state compact"><span>◷</span><strong>No sessions loaded</strong><p>Connect your therapist account to load your appointments from Supabase.</p></div></section>
-          <section className="dashboard-card"><div className="card-heading"><strong>Care workflow</strong><span>Secure</span></div><div className="workflow-list"><button>Review client notes <span>→</span></button><button>Update availability <span>→</span></button><button>Open secure messages <span>→</span></button></div></section>
+          <section className="dashboard-card"><div className="card-heading"><strong>Care workflow</strong><span>Secure</span></div><div className="workflow-list"><button onClick={() => setPanel('notes')}>Review client notes <span>→</span></button><button onClick={() => setPanel('availability')}>Update availability <span>→</span></button><button onClick={() => setPanel('messages')}>Open secure messages <span>→</span></button></div></section>
         </div>
+        {panel && <section className="settings-card therapist-action-panel"><div className="support-panel-header"><div><span className="eyebrow">Therapist workspace</span><h2>{panelTitle(panel)}</h2></div><button className="icon-action" onClick={() => setPanel(null)} aria-label="Close">×</button></div><p>{panelCopy(panel)}</p><button className="outline-action" onClick={() => setPanel(null)}>Close</button></section>}
       </div>
     </section>
   );
+}
+
+function panelTitle(panel: Panel) {
+  return panel === 'clients' ? 'Client relationships' : panel === 'schedule' ? 'Session schedule' : panel === 'profile' ? 'Professional profile' : panel === 'notes' ? 'Client notes' : panel === 'availability' ? 'Availability' : 'Secure messages';
+}
+
+function panelCopy(panel: Panel) {
+  if (panel === 'clients') return 'Your active client list will appear here when therapist relationships are connected to your account.';
+  if (panel === 'schedule') return 'Your scheduled therapy sessions will appear here when appointment data is connected.';
+  if (panel === 'profile') return 'Professional profile editing can be connected to your therapist profile record and verification workflow.';
+  if (panel === 'notes') return 'Client notes are intentionally kept behind the authenticated therapist workflow. Connect the secure notes endpoint to load them here.';
+  if (panel === 'availability') return 'Availability management will update the therapist scheduling records once the scheduling workflow is connected.';
+  return 'Secure therapist-client messages will appear here when the messaging workflow is connected.';
 }
