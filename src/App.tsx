@@ -10,6 +10,7 @@ type LandingProps = {
   setLanguage: (value: string) => void;
   onLogin: () => void;
   onSignup: () => void;
+  onTherapist: () => void;
 };
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
           setLanguage={setLanguage}
           onLogin={() => openAuth('signin')}
           onSignup={() => openAuth('signup')}
+          onTherapist={() => setView('therapist')}
         />
       )}
 
@@ -79,15 +81,13 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function Landing({ language, setLanguage, onLogin, onSignup }: LandingProps) {
+function Landing({ language, setLanguage, onLogin, onSignup, onTherapist }: LandingProps) {
   const ready = useIntroAnimation();
 
   return (
     <section className={`landing-shell ${ready ? 'intro-ready' : ''}`}>
       <div className="landing-content">
-        <button className="back-button landing-anim landing-back" aria-label="Back">
-          ‹
-        </button>
+        <button className="back-button landing-anim landing-back" aria-label="Back">‹</button>
 
         <h1 className="landing-anim landing-heading">
           Your Safe Space for Mental
@@ -116,17 +116,15 @@ function Landing({ language, setLanguage, onLogin, onSignup }: LandingProps) {
         </div>
 
         <div className="landing-actions">
-          <button className="outline-action landing-anim" onClick={onLogin}>
-            Sign In
-          </button>
-          <button className="primary-action landing-anim" onClick={onSignup}>
-            Sign Up
-          </button>
+          <button className="outline-action landing-anim" onClick={onLogin}>Sign In</button>
+          <button className="primary-action landing-anim" onClick={onSignup}>Sign Up</button>
         </div>
 
         <div className="landing-lower landing-anim">
-          <button className="link-button guest" onClick={onLogin}>
-            Continue as Guest (Anonymous)
+          <button className="link-button guest" onClick={onLogin}>Continue as Guest (Anonymous)</button>
+
+          <button className="text-link therapist-landing-link" onClick={onTherapist}>
+            Are you a therapist? <strong>Join the Therapist Portal</strong>
           </button>
 
           <p className="anonymous-copy">
@@ -157,12 +155,8 @@ function AuthScreen({ mode, setMode, onBack, onTherapist, onContinue }: {
         <Brand compact />
 
         <div className="auth-tabs">
-          <button className={mode === 'signin' ? 'tab active' : 'tab'} onClick={() => setMode('signin')}>
-            Sign In
-          </button>
-          <button className={mode === 'signup' ? 'tab active' : 'tab'} onClick={() => setMode('signup')}>
-            Sign Up
-          </button>
+          <button className={mode === 'signin' ? 'tab active' : 'tab'} onClick={() => setMode('signin')}>Sign In</button>
+          <button className={mode === 'signup' ? 'tab active' : 'tab'} onClick={() => setMode('signup')}>Sign Up</button>
         </div>
 
         {mode === 'signin' ? (
@@ -179,17 +173,15 @@ function AuthScreen({ mode, setMode, onBack, onTherapist, onContinue }: {
             </div>
 
             <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
-              <input aria-label="Email" placeholder="Email" type="email" />
+              <input aria-label="Email" placeholder="Email" type="email" required />
               <div className="password-field">
-                <input aria-label="Password" placeholder="Password" type="password" />
+                <input aria-label="Password" placeholder="Password" type="password" required />
                 <span>◉</span>
               </div>
 
               <div className="auth-links">
                 <button type="button" className="text-link">Forgot Password?</button>
-                <button type="button" className="text-link" onClick={() => setMode('signup')}>
-                  Don&apos;t have an account? Sign Up
-                </button>
+                <button type="button" className="text-link" onClick={() => setMode('signup')}>Don&apos;t have an account? Sign Up</button>
               </div>
 
               <button className="full-action" type="submit">Sign In</button>
@@ -214,61 +206,126 @@ function AuthScreen({ mode, setMode, onBack, onTherapist, onContinue }: {
 }
 
 function SignupScreen({ onContinue }: { onContinue: () => void }) {
+  const [showProfessional, setShowProfessional] = useState(false);
+
   return (
     <>
       <div className="professional-card">
         <div className="professional-icon">♧</div>
         <div>
-          <strong>Personalized Access</strong>
-          <p>Licensed Mental Health Providers</p>
+          <strong>Create your Therafam account</strong>
+          <p>Start with the essentials. You can complete your profile later.</p>
         </div>
       </div>
       <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
-        <input aria-label="Professional email" placeholder="Professional Email" type="email" />
+        <input aria-label="First name" placeholder="First Name" type="text" required />
+        <input aria-label="Last name" placeholder="Last Name" type="text" required />
+        <input aria-label="Email" placeholder="Email" type="email" required />
+        <input aria-label="Phone number" placeholder="Phone Number (optional)" type="tel" />
         <div className="password-field">
-          <input aria-label="Password" placeholder="Password" type="password" />
+          <input aria-label="Password" placeholder="Password" type="password" required minLength={8} />
           <span>◉</span>
         </div>
-        <p className="application-copy">Need to apply for access? <button className="text-link" type="button">Apply here</button></p>
-        <button className="full-action" type="submit">Access Professional Portal</button>
+
+        <button
+          type="button"
+          className="text-link professional-details-toggle"
+          onClick={() => setShowProfessional((current) => !current)}
+          aria-expanded={showProfessional}
+        >
+          {showProfessional ? 'Hide professional details' : 'Are you a mental health professional? Add professional details'}
+        </button>
+
+        {showProfessional && (
+          <div className="professional-details">
+            <label>Professional title *<input aria-label="Professional title" placeholder="Psychologist, Psychiatrist, Counselor, Therapist..." required /></label>
+            <label>Area of specialization *<input aria-label="Area of specialization" placeholder="CBT, Family Therapy, Trauma, Anxiety & Stress..." required /></label>
+            <label>Professional registration / license number *<input aria-label="Professional registration number" placeholder="Registration or license number" required /></label>
+            <label>Years of experience *<input aria-label="Years of experience" placeholder="e.g. 5" type="number" min="0" max="70" required /></label>
+            <label>Country / State of practice *<input aria-label="Country or state of practice" placeholder="e.g. Nigeria, Kaduna State" required /></label>
+            <label>Short professional bio *<textarea aria-label="Professional bio" placeholder="Briefly describe your experience and approach..." rows={4} maxLength={500} required /></label>
+            <p className="form-note">Professional details help Therafam review and present your professional profile. You can update your profile later.</p>
+          </div>
+        )}
+
+        <button className="full-action" type="submit">Create Account</button>
       </form>
-      <div className="test-account-card">
-        <button className="small-outline" type="button"><span>✎ Test Account</span><span>Create Account</span></button>
-        <p>Email: therapist@test.com</p>
-        <p>Password: Test1234!</p>
-      </div>
     </>
   );
 }
 
 function TherapistAuth({ onBack, onClient, onContinue }: { onBack: () => void; onClient: () => void; onContinue: () => void; }) {
+  const [mode, setMode] = useState<'signin' | 'apply'>('signin');
+
   return (
     <section className="auth-shell">
       <div className="auth-card therapist-card">
         <button className="mobile-back" onClick={onBack} aria-label="Back">‹</button>
         <Brand compact />
         <div className="auth-tabs">
-          <button className="tab active">Sign In</button>
-          <button className="tab">Apply to Join</button>
+          <button className={mode === 'signin' ? 'tab active' : 'tab'} onClick={() => setMode('signin')}>Sign In</button>
+          <button className={mode === 'apply' ? 'tab active' : 'tab'} onClick={() => setMode('apply')}>Apply to Join</button>
         </div>
-        <div className="professional-card">
-          <div className="professional-icon">♧</div>
-          <div><strong>Professional Access</strong><p>Licensed Mental Health Providers</p></div>
-        </div>
-        <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
-          <input aria-label="Professional email" placeholder="Professional Email" type="email" />
-          <div className="password-field"><input aria-label="Password" placeholder="Password" type="password" /><span>◉</span></div>
-          <p className="application-copy">Need to apply for access? <button className="text-link" type="button">Apply here</button></p>
-          <button className="full-action" type="submit">Access Professional Portal</button>
-        </form>
-        <div className="or-divider"><span>or</span></div>
-        <div className="test-account-card">
-          <button className="small-outline" type="button"><span>✎ Test Account</span><span>Create Account</span></button>
-          <p>Email: therapist@test.com · Password: Test1234!</p>
-        </div>
-        <button className="text-link centered" onClick={onClient}>Return to Client Sign In</button>
+
+        {mode === 'signin' ? (
+          <>
+            <div className="professional-card">
+              <div className="professional-icon">♧</div>
+              <div><strong>Professional Access</strong><p>Licensed Mental Health Providers</p></div>
+            </div>
+            <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form">
+              <input aria-label="Professional email" placeholder="Professional Email" type="email" required />
+              <div className="password-field"><input aria-label="Password" placeholder="Password" type="password" required /><span>◉</span></div>
+              <p className="application-copy">Need to apply for access? <button className="text-link" type="button" onClick={() => setMode('apply')}>Apply here</button></p>
+              <button className="full-action" type="submit">Access Professional Portal</button>
+            </form>
+            <div className="or-divider"><span>or</span></div>
+            <div className="test-account-card">
+              <button className="small-outline" type="button"><span>✎ Test Account</span><span>Create Account</span></button>
+              <p>Email: therapist@test.com · Password: Test1234!</p>
+            </div>
+            <button className="text-link centered" onClick={onClient}>Return to Client Sign In</button>
+          </>
+        ) : (
+          <TherapistApplication onContinue={onContinue} onBackToSignIn={() => setMode('signin')} />
+        )}
       </div>
     </section>
+  );
+}
+
+function TherapistApplication({ onContinue, onBackToSignIn }: { onContinue: () => void; onBackToSignIn: () => void }) {
+  return (
+    <>
+      <div className="professional-card">
+        <div className="professional-icon">♧</div>
+        <div><strong>Join the Therapist Portal</strong><p>Tell us the essentials about your professional practice.</p></div>
+      </div>
+      <form onSubmit={(event) => { event.preventDefault(); onContinue(); }} className="auth-form therapist-application-form">
+        <div className="form-section-title">Account</div>
+        <div className="form-grid-two">
+          <input aria-label="First name" placeholder="First Name" required />
+          <input aria-label="Last name" placeholder="Last Name" required />
+        </div>
+        <input aria-label="Professional email" placeholder="Professional Email" type="email" required />
+        <input aria-label="Phone number" placeholder="Phone Number (optional)" type="tel" />
+        <input aria-label="Password" placeholder="Password" type="password" minLength={8} required />
+
+        <div className="form-section-title">Professional information</div>
+        <label>Professional title *<input aria-label="Professional title" placeholder="Psychologist, Psychiatrist, Counselor, Therapist..." required /></label>
+        <label>Area of specialization *<input aria-label="Area of specialization" placeholder="CBT, Family Therapy, Trauma, Anxiety & Stress..." required /></label>
+        <label>Professional registration / license number *<input aria-label="Professional registration number" placeholder="Registration or license number" required /></label>
+        <div className="form-grid-two">
+          <label>Years of experience *<input aria-label="Years of experience" placeholder="e.g. 5" type="number" min="0" max="70" required /></label>
+          <label>Country / State of practice *<input aria-label="Country or state of practice" placeholder="e.g. Nigeria, Kaduna State" required /></label>
+        </div>
+        <label>Short professional bio *<textarea aria-label="Professional bio" placeholder="Briefly describe your experience and approach..." rows={4} maxLength={500} required /></label>
+        <p className="form-note">Keep your bio concise. You can complete additional professional profile details after your account is created.</p>
+
+        <button className="full-action" type="submit">Submit Application</button>
+        <button className="text-link centered" type="button" onClick={onBackToSignIn}>Already have a professional account? Sign in</button>
+      </form>
+    </>
   );
 }
 
