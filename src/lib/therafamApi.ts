@@ -48,4 +48,13 @@ export async function getTherapistSessions(userId:string){return api<{sessions:a
 export async function getTherapistNotes(userId:string){return api<{notes:any[]}>('/api/therapist/notes',{},userId);}
 export async function getTherapistMessages(userId:string){return api<{messages:any[]}>('/api/therapist/messages',{},userId);}
 export async function submitSupport(userId:string,category:'contact'|'report',message:string){return api<{submitted:boolean}>('/api/support',{method:'POST',body:JSON.stringify({category,message})},userId);}
+export type SubscriptionStatus={subscription:any;features_locked:boolean;trial_days_remaining:number|null};
+export type TherapistEarnings={available_balance:number;pending_balance:number;total_earned:number;total_withdrawn:number;performance:any;transactions:any[]};
+
+export async function getSubscription(userId:string){return api<SubscriptionStatus>('/api/subscription',{},userId);}
+export async function upgradeSubscription(userId:string,plan:'premium_monthly'|'premium_annual'='premium_monthly'){return api('/api/subscription/upgrade',{method:'POST',body:JSON.stringify({plan})},userId);}
+export async function getTherapistEarnings(userId:string){return api<TherapistEarnings>('/api/therapist/earnings',{},userId);}
+export async function recalculateTherapistEarnings(userId:string){return api<{recalculated:boolean;new_earnings:number}>('/api/therapist/earnings/recalculate',{method:'POST'},userId);}
+export async function getTherapistPerformance(userId:string){return api<{performance_history:any[]}>('/api/therapist/performance',{},userId);}
+
 export function getStoredUserId(){return localStorage.getItem('therafam:userId')??'';}
