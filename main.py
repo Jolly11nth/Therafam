@@ -129,6 +129,10 @@ class MessageCreate(BaseModel):
     session_id: str | None = None
 
 
+class SubscriptionUpgrade(BaseModel):
+    plan: Literal["premium_monthly", "premium_annual"] = "premium_monthly"
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "service": "therafam-api", "database_configured": get_supabase() is not None}
@@ -322,6 +326,118 @@ def create_support_request(payload: SupportRequest, user_id: str = Depends(curre
         "metadata": {"category": payload.category, "submitted_by": user_id},
     }).execute()
     return {"submitted": True, "record": (result.data or [None])[0]}
+
+
+@app.get("/api/subscription")
+def get_subscription(user_id: str = Depends(current_user_id)):
+    supabase = require_supabase()
+    user = require_user(user_id, supabase)
+    if user.get("user_type") != "client":
+        return {"status": "not_required", "plan": None, "features_locked": False}
+
+    result = supabase.table("user_subscriptions").select("*").eq("user_id", user_id).maybe_single().execute()
+    subscription = result.data
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription record not found")
+
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    trial_end = subscription.get("trial_ends_at")
+    if subscription.get("status") == "trialing" and trial_end:
+        expires = datetime.fromisoformat(trial_end.replace("Z", "+00:00"))
+        if now >= expires:
+            supabase.table("user_subscriptions").update({"status": "expired"}).eq("user_id", user_id).execute()
+            subscription["status"] = "expired"
+
+    status_value = subscription.get("status")
+    active = status_value in ("trialing", "active")
+    trial_days_remaining = None
+    if status_value == "trialing" and subscription.get("trial_ends_at"):
+        delta = datetime.fromisoformat(subscription["trial_ends_at"].replace("Z", "+00:00")) - now
+        trial_days_remaining = max(0, (delta.total_seconds() + 86399) // 86400)
+
+    return {
+        "subscription": subscription,
+        "features_locked": not active,
+        "trial_days_remaining": int(trial_days_remaining) if trial_days_remaining is not None else None,
+    }
+
+
+@app.post("/api/subscription/upgrade")
+def begin_subscription_upgrade(payload: SubscriptionUpgrade, user_id: str = Depends(current_user_id)):
+    supabase = require_supabase()
+    user = require_user(user_id, supabase)
+    if user.get("user_type") != "client":
+        raise HTTPException(status_code=403, detail="Only client accounts can manage subscriptions")
+
+    # Payment providers will replace this activation step once Paystack/Flutterwave is connected.
+    result = supabase.table("user_subscriptions").update({
+        "plan": payload.plan,
+        "status": "active",
+        "subscription_started_at": "now()",
+    }).eq("user_id", user_id).execute()
+    return {"activated": True, "plan": payload.plan, "payment_required": False, "record": (result.data or [None])[0]}
+
+
+@app.get("/api/therapist/earnings")
+def therapist_earnings(user_id: str = Depends(current_user_id)):
+    supabase = require_supabase()
+    require_therapist(user_id, supabase)
+
+    rows = supabase.table("therapist_earnings").select("*").eq("therapist_id", user_id).order("created_at", desc=True).limit(100).execute().data or []
+    available = sum(float(row.get("amount") or 0) for row in rows if row.get("status") == "available" and row.get("earning_type") != "withdrawal")
+    pending = sum(float(row.get("amount") or 0) for row in rows if row.get("status") == "pending" and row.get("earning_type") != "withdrawal")
+    withdrawn = sum(float(row.get("amount") or 0) for row in rows if row.get("earning_type") == "withdrawal" and row.get("status") == "paid_out")
+    total_earned = available + pending + withdrawn
+
+    performance = supabase.table("therapist_performance").select("*").eq("therapist_id", user_id).order("period_end", desc=True).limit(1).maybe_single().execute().data
+    return {
+        "available_balance": round(available, 2),
+        "pending_balance": round(pending, 2),
+        "total_earned": round(total_earned, 2),
+        "total_withdrawn": round(withdrawn, 2),
+        "performance": performance,
+        "transactions": rows,
+    }
+
+
+@app.post("/api/therapist/earnings/recalculate")
+def recalculate_therapist_earnings(user_id: str = Depends(current_user_id)):
+    supabase = require_supabase()
+    require_therapist(user_id, supabase)
+
+    sessions = supabase.table("therapy_sessions").select("id,client_id,total_cost,status,payment_status").eq("therapist_id", user_id).eq("status", "completed").eq("payment_status", "paid").execute().data or []
+    existing = supabase.table("therapist_earnings").select("session_id").eq("therapist_id", user_id).eq("earning_type", "session_payment").execute().data or []
+    existing_ids = {row.get("session_id") for row in existing}
+
+    inserted = 0
+    for session in sessions:
+        if session.get("id") in existing_ids:
+            continue
+        gross = float(session.get("total_cost") or 0)
+        if gross <= 0:
+            continue
+        therapist_share = round(gross * 0.80, 2)
+        supabase.table("therapist_earnings").insert({
+            "therapist_id": user_id,
+            "client_id": session.get("client_id"),
+            "session_id": session.get("id"),
+            "amount": therapist_share,
+            "earning_type": "session_payment",
+            "status": "available",
+            "description": "80% therapist share from completed paid session",
+        }).execute()
+        inserted += 1
+
+    return {"recalculated": True, "new_earnings": inserted}
+
+
+@app.get("/api/therapist/performance")
+def therapist_performance(user_id: str = Depends(current_user_id)):
+    supabase = require_supabase()
+    require_therapist(user_id, supabase)
+    rows = supabase.table("therapist_performance").select("*").eq("therapist_id", user_id).order("period_end", desc=True).limit(12).execute().data or []
+    return {"performance_history": rows}
 
 
 @app.post("/api/crisis-check")
