@@ -16,7 +16,14 @@ export default function Messages({ onBack, onHome }: Props) {
   useEffect(() => {
     if (!supabase || !userId) return;
     void (async () => {
-      const result = await supabase.from('chat_messages').select('id,message_text,sender_id,created_at').eq('conversation_type', 'therapist_chat').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: true }).limit(100) as unknown as SupabaseResult<Message[]>;
+      const query = supabase
+        .from('chat_messages')
+        .select('id,message_text,sender_id,created_at')
+        .eq('conversation_type', 'therapist_chat')
+        .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+        .order('created_at', { ascending: true })
+        .limit(100);
+      const result = await query.execute(false) as SupabaseResult<Message[]>;
       if (result.error) setError('Messages are not available yet. Check your account connection.');
       else setMessages(result.data ?? []);
     })();
@@ -25,7 +32,12 @@ export default function Messages({ onBack, onHome }: Props) {
   async function send() {
     const text = draft.trim();
     if (!text || !supabase || !userId) return;
-    const result = await supabase.from('chat_messages').insert({ conversation_type: 'therapist_chat', sender_id: userId, message_text: text }).select('id,message_text,sender_id,created_at').single() as unknown as SupabaseResult<Message>;
+    const query = supabase
+      .from('chat_messages')
+      .insert({ conversation_type: 'therapist_chat', sender_id: userId, message_text: text })
+      .select('id,message_text,sender_id,created_at')
+      .single();
+    const result = await query.execute(true) as SupabaseResult<Message>;
     if (result.error) setError('Your message could not be sent.');
     else if (result.data) { setMessages((current) => [...current, result.data as Message]); setDraft(''); }
   }
