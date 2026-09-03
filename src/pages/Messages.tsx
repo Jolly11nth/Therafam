@@ -5,7 +5,7 @@ import { getStoredUserId } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void };
 type Message = { id: string; message_text: string; sender_id: string | null; created_at: string };
-type SupabaseResult<T> = { data: T | null; error: Error | null };
+type SupabaseResult<T> = { data: T | null; error: Error | null; count?: number | null };
 
 export default function Messages({ onBack, onHome }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -23,7 +23,7 @@ export default function Messages({ onBack, onHome }: Props) {
         .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
         .order('created_at', { ascending: true })
         .limit(100);
-      const result = await query.execute(false) as SupabaseResult<Message[]>;
+      const result = await (query as unknown as Promise<SupabaseResult<Message[]>>);
       if (result.error) setError('Messages are not available yet. Check your account connection.');
       else setMessages(result.data ?? []);
     })();
@@ -37,7 +37,7 @@ export default function Messages({ onBack, onHome }: Props) {
       .insert({ conversation_type: 'therapist_chat', sender_id: userId, message_text: text })
       .select('id,message_text,sender_id,created_at')
       .single();
-    const result = await query.execute(true) as SupabaseResult<Message>;
+    const result = await (query as unknown as Promise<SupabaseResult<Message>>);
     if (result.error) setError('Your message could not be sent.');
     else if (result.data) { setMessages((current) => [...current, result.data as Message]); setDraft(''); }
   }
