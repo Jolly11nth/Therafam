@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "database" / "therafam_schema.sql"
 AUTH = ROOT / "database" / "railway_auth_migration.sql"
 SUBS = ROOT / "database" / "railway_subscriptions_earnings.sql"
+REVIEWS = ROOT / "database" / "railway_therapist_reviews.sql"
 
 
 def run(conn, path: Path) -> None:
@@ -31,6 +32,7 @@ def main() -> None:
             run(conn, SCHEMA)
         run(conn, SUBS)
         run(conn, AUTH)
+        run(conn, REVIEWS)
         conn.execute("ANALYZE")
 
     print("Therafam Railway database is ready.")
