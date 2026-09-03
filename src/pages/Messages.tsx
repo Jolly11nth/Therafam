@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabase';
 import { getStoredUserId } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void };
-
 type Message = { id: string; message_text: string; sender_id: string | null; created_at: string };
+type SupabaseResult<T> = { data: T | null; error: Error | null };
 
 export default function Messages({ onBack, onHome }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -15,19 +15,19 @@ export default function Messages({ onBack, onHome }: Props) {
 
   useEffect(() => {
     if (!supabase || !userId) return;
-    supabase.from('chat_messages').select('id,message_text,sender_id,created_at').eq('conversation_type', 'therapist_chat').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: true }).limit(100)
-      .then(({ data, error: queryError }) => {
-        if (queryError) setError('Messages are not available yet. Check your account connection.');
-        else setMessages((data ?? []) as Message[]);
-      });
+    void (async () => {
+      const result = await supabase.from('chat_messages').select('id,message_text,sender_id,created_at').eq('conversation_type', 'therapist_chat').or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order('created_at', { ascending: true }).limit(100) as unknown as SupabaseResult<Message[]>;
+      if (result.error) setError('Messages are not available yet. Check your account connection.');
+      else setMessages(result.data ?? []);
+    })();
   }, [userId]);
 
   async function send() {
     const text = draft.trim();
     if (!text || !supabase || !userId) return;
-    const { data, error: insertError } = await supabase.from('chat_messages').insert({ conversation_type: 'therapist_chat', sender_id: userId, message_text: text }).select('id,message_text,sender_id,created_at').single();
-    if (insertError) setError('Your message could not be sent.');
-    else { setMessages((current) => [...current, data as Message]); setDraft(''); }
+    const result = await supabase.from('chat_messages').insert({ conversation_type: 'therapist_chat', sender_id: userId, message_text: text }).select('id,message_text,sender_id,created_at').single() as unknown as SupabaseResult<Message>;
+    if (result.error) setError('Your message could not be sent.');
+    else if (result.data) { setMessages((current) => [...current, result.data as Message]); setDraft(''); }
   }
 
   return (
