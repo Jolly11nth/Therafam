@@ -2,9 +2,11 @@
 import uvicorn
 
 from .app import app
+from .booking import router as booking_router
 from .therapist_directory import router as therapist_directory_router
 
 app.include_router(therapist_directory_router)
+app.include_router(booking_router)
 
 
 if __name__ == "__main__":
