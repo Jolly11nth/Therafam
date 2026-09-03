@@ -19,6 +19,7 @@ COPY --from=frontend-build /frontend/dist ./dist
 COPY backend ./backend
 COPY main.py ./main.py
 COPY database ./database
+COPY scripts ./scripts
 
 ENV PORT=8000
 EXPOSE 8000
