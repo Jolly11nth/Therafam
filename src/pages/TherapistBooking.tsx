@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { createBooking, getTherapistAvailability, getTherapistById } from '../lib/therafamApi';
+import { createBooking, getTherapistAvailability, getTherapistById, Therapist } from '../lib/therafamApi';
 
 type Props = { therapistId: string; onBack: () => void; onHome: () => void };
-
-type Therapist = { user_id:string; first_name:string; last_name:string; specializations?:string[]; years_experience?:number|null; bio?:string|null; rating?:number; total_reviews?:number; profile_picture_url?:string|null };
 type Slot = { day_of_week:number; start_time:string; end_time:string; is_available:boolean };
 
 export default function TherapistBooking({ therapistId, onBack, onHome }: Props) {
