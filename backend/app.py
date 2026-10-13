@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from .auth import current_user, hash_password, issue_session, verify_password
+from .auth import current_user, hash_password, issue_session, revoke_session, verify_password
 from .db import execute, many, one
 
 try:
@@ -119,7 +119,11 @@ def signin(p: AuthRequest):
     return {"user":public_user(u),"token":issue_session(str(u["id"]))}
 
 @app.post("/api/auth/signout")
-def signout(user=Depends(current_user)): return {"signed_out":True,"user_id":str(user["id"])}
+def signout(authorization: str | None = None, user=Depends(current_user)):
+    # Revoke the hashed bearer token so it cannot be reused after sign-out.
+    if authorization and authorization.lower().startswith("bearer "):
+        revoke_session(authorization.split(" ", 1)[1].strip())
+    return {"signed_out": True, "user_id": str(user["id"])}
 @app.get("/api/me")
 def me(user=Depends(current_user)): return {"user":public_user(user)}
 
