@@ -12,6 +12,7 @@ SCHEMA = ROOT / "database" / "therafam_schema.sql"
 AUTH = ROOT / "database" / "railway_auth_migration.sql"
 SUBS = ROOT / "database" / "railway_subscriptions_earnings.sql"
 REVIEWS = ROOT / "database" / "railway_therapist_reviews.sql"
+RAG = ROOT / "database" / "railway_rag_migration.sql"
 
 
 def run(conn, path: Path) -> None:
@@ -42,6 +43,7 @@ def main() -> None:
         run(conn, SUBS)
         run(conn, AUTH)
         run(conn, REVIEWS)
+        run(conn, RAG)
         conn.execute("ANALYZE")
 
     print("Therafam Railway database is ready.")
