@@ -124,16 +124,28 @@ def signout(user=Depends(current_user)): return {"signed_out":True,"user_id":str
 def me(user=Depends(current_user)): return {"user":public_user(user)}
 
 @app.post("/api/chat")
-def chat(p: ChatRequest,user=Depends(current_user)):
-    key=os.getenv("OPENAI_API_KEY")
-    if not key or OpenAI is None: return {"response":"The Therafam AI service is currently in demo mode. Your message was received, but a live AI provider is not configured yet.","demo":True}
-    messages=[{"role":"system","content":"You are Therafam AI, a supportive mental-wellness assistant. Be calm, empathetic, concise, and age-appropriate. Do not diagnose or pretend to be a clinician. Encourage trusted human support when appropriate."}]
-    messages += [{"role":x.role,"content":x.content} for x in p.history[-20:]] + [{"role":"user","content":p.message}]
-    try: text=OpenAI(api_key=key).chat.completions.create(model=os.getenv("OPENAI_CHAT_MODEL","gpt-4o-mini"),messages=messages,temperature=.4,max_tokens=500).choices[0].message.content or "I’m here to listen. Could you tell me a little more?"
-    except Exception as e: raise HTTPException(502,"AI service is temporarily unavailable") from e
-    try: execute("INSERT INTO ai_interactions(user_id,input_text,response_text,emotions,escalation_level) VALUES(%s,%s,%s,%s,%s)",(user["id"],p.message,text,[],0))
-    except Exception: pass
-    return {"response":text,"demo":False}
+def chat(p: ChatRequest, user=Depends(current_user)):
+    """Therafam CBT companion powered by the repository guide and Railway pgvector."""
+    from .rag_ai import answer_with_rag
+    try:
+        result = answer_with_rag(
+            p.message,
+            [{"role": x.role, "content": x.content} for x in p.history[-12:]],
+        )
+    except RuntimeError as exc:
+        # Fail explicitly rather than silently presenting a non-RAG demo response.
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        # Avoid leaking database/provider details to the client.
+        raise HTTPException(502, "Therafam AI is temporarily unavailable") from exc
+    try:
+        execute(
+            "INSERT INTO ai_interactions(user_id,input_text,response_text,emotions,escalation_level) VALUES(%s,%s,%s,%s,%s)",
+            (user["id"], p.message, result["response"], [], 1 if result.get("crisis") else 0),
+        )
+    except Exception:
+        pass
+    return result
 
 @app.get("/api/programs")
 def programs(user=Depends(current_user)):
