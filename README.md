@@ -95,3 +95,26 @@ The API is available at `http://localhost:8000`.
 - `POST /api/crisis-check` - crisis detection endpoint
 - `POST /api/emotion-detection` - emotion detection endpoint
 - `GET /api/mood-context/{user_id}` - mood context endpoint
+
+## Railway-native AI (PDF RAG)
+
+The `/api/chat` endpoint now uses `backend/rag_ai.py`, which retrieves relevant passages from `Therafam_CBT_VectorRAG_Personalized_Guide.pdf` using OpenAI embeddings and Railway PostgreSQL with `pgvector`. The guide is copied into the Docker image. The first chat request indexes it if it has not already been indexed; subsequent requests reuse the stored vectors.
+
+### Railway variables
+
+Set these on the **backend/web service** in Railway:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | Reference Railway PostgreSQL using a Railway variable reference such as `${{Postgres.DATABASE_URL}}` (use your actual database service name). |
+| `OPENAI_API_KEY` | Yes | Server-side OpenAI API key. Never use a `VITE_` prefix. |
+| `OPENAI_CHAT_MODEL` | No | Defaults to `gpt-4o-mini`. |
+| `OPENAI_EMBEDDING_MODEL` | No | Defaults to `text-embedding-3-small` (1536 dimensions). |
+| `THERAFAM_RAG_PDF_PATH` | No | Defaults to `Therafam_CBT_VectorRAG_Personalized_Guide.pdf` at the app root. |
+| `RAG_TOP_K` | No | Defaults to 4 retrieved chunks. |
+| `RAG_CHUNK_WORDS` | No | Defaults to 220 words per chunk. |
+| `RAG_CHUNK_OVERLAP` | No | Defaults to 40 words overlap. |
+
+The PostgreSQL instance must support `CREATE EXTENSION vector`. Run `database/railway_rag_migration.sql` against the Railway database if you prefer applying the schema before first use; the service also creates the required table at runtime. Keep `DATABASE_URL` and `OPENAI_API_KEY` private in Railway Variables. Do not commit actual secrets to GitHub.
+
+The RAG flow JSON is treated as a design reference, not an executable Langflow server. Its current nodes describe Redis memory, a CBT prompt, OpenAI chat, satisfaction detection, and a Supabase write; they do not define a complete PDF retrieval chain. This implementation adds retrieval from the repository's CBT guide and stores vectors in Railway PostgreSQL instead of Supabase.

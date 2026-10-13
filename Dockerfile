@@ -19,6 +19,7 @@ COPY --from=frontend-build /frontend/dist ./dist
 COPY backend ./backend
 COPY main.py ./main.py
 COPY database ./database
+COPY Therafam_CBT_VectorRAG_Personalized_Guide.pdf ./Therafam_CBT_VectorRAG_Personalized_Guide.pdf
 COPY scripts ./scripts
 
 ENV PORT=8000
