@@ -80,6 +80,9 @@ def ensure_knowledge_index() -> int:
         if exists:
             return int(conn.execute("SELECT COUNT(*) FROM therafam_knowledge_chunks WHERE source_hash=%s", (pdf_hash,)).fetchone()[0])
         chunks = _extract_pdf()
+        # Replace chunks from older versions of this PDF in the same transaction.
+        # If embedding/indexing fails, the transaction rolls back and preserves the old index.
+        conn.execute("DELETE FROM therafam_knowledge_chunks WHERE source_hash <> %s", (pdf_hash,))
         client = _client()
         for start in range(0, len(chunks), 64):
             batch = chunks[start:start + 64]
