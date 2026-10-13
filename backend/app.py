@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -119,7 +119,7 @@ def signin(p: AuthRequest):
     return {"user":public_user(u),"token":issue_session(str(u["id"]))}
 
 @app.post("/api/auth/signout")
-def signout(authorization: str | None = None, user=Depends(current_user)):
+def signout(authorization: str | None = Header(default=None), user=Depends(current_user)):
     # Revoke the hashed bearer token so it cannot be reused after sign-out.
     if authorization and authorization.lower().startswith("bearer "):
         revoke_session(authorization.split(" ", 1)[1].strip())
