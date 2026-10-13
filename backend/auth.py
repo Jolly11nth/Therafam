@@ -40,12 +40,14 @@ def revoke_session(raw_token: str)->None:
 def user_from_token(raw_token: str):
     return one("SELECT u.id,u.email,u.user_type,u.is_verified,u.is_active FROM user_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=%s AND s.revoked_at IS NULL AND s.expires_at>NOW() AND u.is_active=TRUE",(hashlib.sha256(raw_token.encode()).hexdigest(),))
 
-def current_user(authorization: str|None=Header(default=None),x_therafam_user_id: str|None=Header(default=None,alias="X-Therafam-User-Id")):
-    if authorization and authorization.lower().startswith("bearer "):
-        user=user_from_token(authorization.split(" ",1)[1].strip())
-        if user:return user
-        raise HTTPException(401,"Invalid or expired session")
-    if x_therafam_user_id:
-        user=one("SELECT id,email,user_type,is_verified,is_active FROM users WHERE id=%s AND is_active=TRUE",(x_therafam_user_id,))
-        if user:return user
-    raise HTTPException(401,"Missing user session")
+def current_user(authorization: str | None = Header(default=None)):
+    """Require an unguessable bearer session token; never trust a client-supplied user UUID."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(401, "Missing user session")
+    raw_token = authorization.split(" ", 1)[1].strip()
+    if not raw_token:
+        raise HTTPException(401, "Missing user session")
+    user = user_from_token(raw_token)
+    if not user:
+        raise HTTPException(401, "Invalid or expired session")
+    return user
