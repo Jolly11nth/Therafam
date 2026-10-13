@@ -12,6 +12,7 @@ SCHEMA = ROOT / "database" / "therafam_schema.sql"
 AUTH = ROOT / "database" / "railway_auth_migration.sql"
 SUBS = ROOT / "database" / "railway_subscriptions_earnings.sql"
 REVIEWS = ROOT / "database" / "railway_therapist_reviews.sql"
+RAG = ROOT / "database" / "railway_rag_migration.sql"
 
 
 def run(conn, path: Path) -> None:
@@ -29,10 +30,20 @@ def main() -> None:
             "SELECT to_regclass('public.users') AS users_table"
         ).fetchone()[0]
         if not exists:
+            existing_tables = conn.execute(
+                "SELECT COUNT(*) FROM pg_tables "
+                "WHERE schemaname = 'public' AND tablename NOT LIKE 'pg_%'"
+            ).fetchone()[0]
+            if existing_tables:
+                raise SystemExit(
+                    "Refusing to initialize schema: public tables already exist but "
+                    "public.users is missing. Inspect the database before proceeding."
+                )
             run(conn, SCHEMA)
         run(conn, SUBS)
         run(conn, AUTH)
         run(conn, REVIEWS)
+        run(conn, RAG)
         conn.execute("ANALYZE")
 
     print("Therafam Railway database is ready.")

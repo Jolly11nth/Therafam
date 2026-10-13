@@ -7,7 +7,6 @@ async function request(path:string,init:RequestInit={}){
   const token=localStorage.getItem('therafam:session');
   const headers:Record<string,string>={...(init.headers as Record<string,string>|undefined)};
   if(token) headers.Authorization=`Bearer ${token}`;
-  else { const id=getStoredUserId(); if(id) headers['X-Therafam-User-Id']=id; }
   if(init.body && !(init.body instanceof FormData)) headers['Content-Type']='application/json';
   const r=await fetch(`${apiBase}${path}`,{...init,headers});
   const data=await r.json().catch(()=>null);
@@ -59,7 +58,7 @@ class QueryBuilder<T=any>{
 
 export const supabase={
   from:(table:string)=>new QueryBuilder(table),
-  auth:{signOut:async()=>{localStorage.removeItem('therafam:session');localStorage.removeItem('therafam:userId');return {error:null}}},
+  auth:{signOut:async()=>{const result=await request('/api/auth/signout',{method:'POST'});localStorage.removeItem('therafam:session');localStorage.removeItem('therafam:userId');return {error:result.error}}},
 };
 
 export async function callBackend(path:string,init:RequestInit={}){const r=await request(path,init);if(r.error)throw new Error(r.error.message);return new Response(JSON.stringify(r.data),{status:200,headers:{'Content-Type':'application/json'}})}
