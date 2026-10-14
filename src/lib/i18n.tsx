@@ -284,13 +284,13 @@ for (const [key, values] of Object.entries(rows)) {
 
 export function translate(text: string): string {
   const language = getLanguage();
-  return dictionaries[language]?.[text.trim().replace(/\\s+/g, ' ')] ?? text;
+  return dictionaries[language]?.[text.trim().replace(/\s+/g, ' ')] ?? text;
 }
 
 function translatePreservingWhitespace(value: string): string {
-  const leading = value.match(/^\\s*/)?.[0] ?? '';
-  const trailing = value.match(/\\s*$/)?.[0] ?? '';
-  const normalized = value.trim().replace(/\\s+/g, ' ');
+  const leading = value.match(/^\s*/)?.[0] ?? '';
+  const trailing = value.match(/\s*$/)?.[0] ?? '';
+  const normalized = value.trim().replace(/\s+/g, ' ');
   if (!normalized) return value;
   return leading + (dictionaries[getLanguage()]?.[normalized] ?? normalized) + trailing;
 }
