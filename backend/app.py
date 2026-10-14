@@ -47,6 +47,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=30)
+    language: Literal["en", "es", "fr", "pt", "ar", "sw", "ha", "yo", "ig"] = "en"
 class MoodEntry(BaseModel):
     mood_value: int = Field(ge=1, le=10)
     mood_label: str = Field(min_length=1, max_length=50)
@@ -135,6 +136,7 @@ def chat(p: ChatRequest, user=Depends(current_user)):
         result = answer_with_rag(
             p.message,
             [{"role": x.role, "content": x.content} for x in p.history[-12:]],
+            p.language,
         )
     except RuntimeError as exc:
         # Fail explicitly rather than silently presenting a non-RAG demo response.

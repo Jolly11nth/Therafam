@@ -1,3 +1,4 @@
+import { T, translate } from '../lib/i18n';
 import { FormEvent, useState } from 'react';
 import Brand from '../components/Brand';
 import { sendAiMessage, type ChatMessage } from '../lib/therafamApi';
@@ -35,30 +36,30 @@ export default function AIChat({ onBack, onHome }: Props) {
     <section className="workspace-shell ai-shell">
       <header className="workspace-topbar">
         <button className="workspace-brand" onClick={onHome}><Brand compact /></button>
-        <button className="text-link" onClick={onBack}>Back to dashboard</button>
+        <button className="text-link" onClick={onBack}><T>Back to dashboard</T></button>
       </header>
       <div className="ai-layout">
         <aside className="ai-info-card">
           <span className="ai-orb">✦</span>
-          <span className="eyebrow">Therafam AI</span>
-          <h1>A private space to talk.</h1>
-          <p>Therafam AI is designed for supportive conversations and practical wellbeing guidance. It does not replace a licensed mental health professional.</p>
-          <div className="ai-note"><strong>Privacy first</strong><span>Save or delete conversations according to your account settings.</span></div>
-          <button className="outline-action" onClick={() => setMessages([{ role: 'assistant', content: 'We can start fresh. What would you like to focus on today?' }])}>New conversation</button>
+          <span className="eyebrow"><T>Therafam AI</T></span>
+          <h1><T>A private space to talk.</T></h1>
+          <p><T>Therafam AI is designed for supportive conversations and practical wellbeing guidance. It does not replace a licensed mental health professional.</T></p>
+          <div className="ai-note"><strong><T>Privacy first</T></strong><span><T>Save or delete conversations according to your account settings.</T></span></div>
+          <button className="outline-action" onClick={() => setMessages([{ role: 'assistant', content: 'We can start fresh. What would you like to focus on today?' }])}><T>New conversation</T></button>
         </aside>
 
         <div className="chat-panel">
-          <div className="chat-header"><div><strong>Therafam AI</strong><span>Supportive conversation</span></div><span className="online-dot">Available</span></div>
+          <div className="chat-header"><div><strong><T>Therafam AI</T></strong><span><T>Supportive conversation</T></span></div><span className="online-dot"><T>Available</T></span></div>
           <div className="chat-messages">
-            {messages.map((message, index) => <div key={index} className={`chat-bubble ${message.role === 'user' ? 'chat-user' : 'chat-ai'}`}>{message.content}</div>)}
-            {sending && <div className="chat-bubble chat-ai">Thinking…</div>}
+            {messages.map((message, index) => <div key={index} className={`chat-bubble ${message.role === 'user' ? 'chat-user' : 'chat-ai'}`}><T>{message.content}</T></div>)}
+            {sending && <div className="chat-bubble chat-ai"><T>Thinking…</T></div>}
           </div>
-          {error && <div className="chat-error">{error}</div>}
+          {error && <div className="chat-error"><T>{error}</T></div>}
           <form className="chat-composer" onSubmit={submit}>
-            <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Write what’s on your mind…" aria-label="Message Therafam AI" />
-            <button className="primary-action" type="submit" disabled={sending || !draft.trim()}>{sending ? 'Sending…' : 'Send'}</button>
+            <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={translate("Write what’s on your mind…")} aria-label={translate("Message Therafam AI")} />
+            <button className="primary-action" type="submit" disabled={sending || !draft.trim()}><T>{sending ? 'Sending…' : 'Send'}</T></button>
           </form>
-          <p className="disclaimer-copy">For urgent safety concerns, seek immediate help from a trusted person or local emergency service. Therafam AI is not an emergency service.</p>
+          <p className="disclaimer-copy"><T>For urgent safety concerns, seek immediate help from a trusted person or local emergency service. Therafam AI is not an emergency service.</T></p>
         </div>
       </div>
     </section>

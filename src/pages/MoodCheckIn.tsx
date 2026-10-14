@@ -1,3 +1,4 @@
+import { T, translate } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import Brand from '../components/Brand';
 import { getMoodEntries, getStoredUserId, saveMoodEntry, type MoodEntry } from '../lib/therafamApi';
@@ -39,12 +40,12 @@ export default function MoodCheckIn({ onBack, onHome }: Props) {
 
   return (
     <section className="workspace-shell">
-      <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><button className="text-link" onClick={onBack}>Back to dashboard</button></header>
+      <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><button className="text-link" onClick={onBack}><T>Back to dashboard</T></button></header>
       <div className="workspace-content narrow-content">
-        <div className="workspace-heading"><div><span className="eyebrow">Daily reflection</span><h1>How are you feeling?</h1><p>A quick check-in can help you notice patterns without judging yourself.</p></div></div>
+        <div className="workspace-heading"><div><span className="eyebrow"><T>Daily reflection</T></span><h1><T>How are you feeling?</T></h1><p><T>A quick check-in can help you notice patterns without judging yourself.</T></p></div></div>
         <div className="settings-grid">
-          <section className="settings-card mood-form-card"><h2>Mood</h2><div className="mood-choice-grid">{moods.map((item) => <button key={item.value} className={mood === item.value ? 'mood-choice selected' : 'mood-choice'} onClick={() => setMood(item.value)}><strong>{item.value}</strong><span>{item.label}</span></button>)}</div><Range label="Energy" value={energy} onChange={setEnergy} /><Range label="Stress" value={stress} onChange={setStress} /><label className="mood-note"><span>Anything you want to remember?</span><textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" /></label><button className="primary-action mood-save" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save check-in'}</button>{message && <p className="form-message">{message}</p>}</section>
-          <section className="settings-card"><h2>Recent check-ins</h2>{history.length ? <div className="mood-history">{history.map((entry) => <div className="mood-history-row" key={entry.id ?? entry.entry_date}><span>{new Date(entry.entry_date).toLocaleDateString()}</span><strong>{entry.mood_label}</strong><span>{entry.mood_value}/5</span></div>)}</div> : <div className="empty-state compact"><span>♡</span><strong>No saved check-ins yet</strong><p>Your private mood history will appear here after your first saved check-in.</p></div>}</section>
+          <section className="settings-card mood-form-card"><h2><T>Mood</T></h2><div className="mood-choice-grid">{moods.map((item) => <button key={item.value} className={mood === item.value ? 'mood-choice selected' : 'mood-choice'} onClick={() => setMood(item.value)}><strong><T>{item.value}</T></strong><span><T>{item.label}</T></span></button>)}</div><Range label="Energy" value={energy} onChange={setEnergy} /><Range label="Stress" value={stress} onChange={setStress} /><label className="mood-note"><span><T>Anything you want to remember?</T></span><textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={translate("Optional note")} /></label><button className="primary-action mood-save" onClick={save} disabled={saving}><T>{saving ? 'Saving…' : 'Save check-in'}</T></button>{message && <p className="form-message"><T>{message}</T></p>}</section>
+          <section className="settings-card"><h2><T>Recent check-ins</T></h2>{history.length ? <div className="mood-history">{history.map((entry) => <div className="mood-history-row" key={entry.id ?? entry.entry_date}><span><T>{new Date(entry.entry_date).toLocaleDateString()}</T></span><strong><T>{entry.mood_label}</T></strong><span>{entry.mood_value}/5</span></div>)}</div> : <div className="empty-state compact"><span>♡</span><strong><T>No saved check-ins yet</T></strong><p><T>Your private mood history will appear here after your first saved check-in.</T></p></div>}</section>
         </div>
       </div>
     </section>
@@ -52,5 +53,5 @@ export default function MoodCheckIn({ onBack, onHome }: Props) {
 }
 
 function Range({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
-  return <label className="range-control"><span><b>{label}</b><em>{value}/10</em></span><input type="range" min="1" max="10" value={value} onChange={(e) => onChange(Number(e.target.value))} /></label>;
+  return <label className="range-control"><span><b><T>{label}</T></b><em>{value}/10</em></span><input type="range" min="1" max="10" value={value} onChange={(e) => onChange(Number(e.target.value))} /></label>;
 }

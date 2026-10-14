@@ -1,16 +1,19 @@
-export type Language = 'en' | 'es';
+export type Language = 'en' | 'es' | 'fr' | 'pt' | 'ar' | 'sw' | 'ha' | 'yo' | 'ig';
 export type Theme = 'light' | 'dark' | 'auto';
 
 const LANGUAGE_KEY = 'therafam:language';
 const THEME_KEY = 'therafam:theme';
 
 export function getLanguage(): Language {
-  return localStorage.getItem(LANGUAGE_KEY) === 'es' ? 'es' : 'en';
+  const value = localStorage.getItem(LANGUAGE_KEY);
+  const supported: Language[] = ['en', 'es', 'fr', 'pt', 'ar', 'sw', 'ha', 'yo', 'ig'];
+  return supported.includes(value as Language) ? value as Language : 'en';
 }
 
 export function setLanguage(language: Language) {
   localStorage.setItem(LANGUAGE_KEY, language);
   document.documentElement.lang = language;
+  document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
   window.dispatchEvent(new CustomEvent('therafam:preferences', { detail: { language } }));
 }
 

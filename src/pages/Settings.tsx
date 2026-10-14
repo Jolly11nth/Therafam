@@ -1,3 +1,4 @@
+import { T, translate, LANGUAGES } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/Brand';
 import { getSettings, getStoredUserId, getUserProfile, saveSettings, saveUserProfile, uploadProfileImage, type AppSettings, type UserProfile } from '../lib/therafamApi';
@@ -88,39 +89,39 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
 
   return (
     <section className="workspace-shell">
-      <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><div className="workspace-top-actions"><button className="theme-button" onClick={() => update('theme', settings.theme === 'dark' ? 'light' : 'dark')}>{settings.theme === 'dark' ? '☀ Dark' : '☾ Light'}</button><button className="text-link" onClick={onBack}>Back to dashboard</button></div></header>
+      <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><div className="workspace-top-actions"><button className="theme-button" onClick={() => update('theme', settings.theme === 'dark' ? 'light' : 'dark')}><T>{settings.theme === 'dark' ? '☀ Dark' : '☾ Light'}</T></button><button className="text-link" onClick={onBack}><T>Back to dashboard</T></button></div></header>
       <div className="workspace-content narrow-content">
-        <div className="workspace-heading"><div><span className="eyebrow">Your account</span><h1>Settings</h1><p>Manage your profile, preferences, privacy, and Therafam experience.</p></div></div>
+        <div className="workspace-heading"><div><span className="eyebrow"><T>Your account</T></span><h1><T>Settings</T></h1><p><T>Manage your profile, preferences, privacy, and Therafam experience.</T></p></div></div>
 
         <section className="settings-card profile-settings-card">
-          <div className="profile-settings-header"><div><span className="eyebrow">Personal profile</span><h2>Profile</h2><p>Update the information Therafam uses to personalize your experience.</p></div></div>
+          <div className="profile-settings-header"><div><span className="eyebrow"><T>Personal profile</T></span><h2><T>Profile</T></h2><p><T>Update the information Therafam uses to personalize your experience.</T></p></div></div>
           <div className="profile-editor">
             <div className="avatar-column">
-              <div className="profile-avatar">{profile.profile_picture_url ? <img src={profile.profile_picture_url} alt="Profile" /> : <span>{(profile.first_name?.[0] || 'T')}{(profile.last_name?.[0] || 'F')}</span>}</div>
+              <div className="profile-avatar">{profile.profile_picture_url ? <img src={profile.profile_picture_url} alt={translate("Profile")} /> : <span><T>{(profile.first_name?.[0] || 'T')}{(profile.last_name?.[0] || 'F')}</T></span>}</div>
               <input ref={fileRef} className="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImage} />
-              <button className="outline-action" type="button" onClick={() => fileRef.current?.click()} disabled={uploading || !userId}>{uploading ? 'Uploading…' : 'Upload photo'}</button>
-              <small>JPG, PNG or WebP · max 5 MB</small>
+              <button className="outline-action" type="button" onClick={() => fileRef.current?.click()} disabled={uploading || !userId}><T>{uploading ? 'Uploading…' : 'Upload photo'}</T></button>
+              <small><T>JPG, PNG or WebP · max 5 MB</T></small>
             </div>
             <div className="profile-fields">
-              <div className="field-row"><label><span>First name</span><input value={profile.first_name} onChange={(e) => updateProfile('first_name', e.target.value)} placeholder="First name" /></label><label><span>Last name</span><input value={profile.last_name} onChange={(e) => updateProfile('last_name', e.target.value)} placeholder="Last name" /></label></div>
-              <div className="field-row"><label><span>Phone number</span><input value={profile.phone_number} onChange={(e) => updateProfile('phone_number', e.target.value)} placeholder="Phone number" /></label><label><span>Time zone</span><select value={profile.timezone} onChange={(e) => updateProfile('timezone', e.target.value)}><option value="Africa/Lagos">West Africa Time (Lagos)</option><option value="UTC">UTC</option><option value="Europe/London">London</option></select></label></div>
-              <label><span>About you</span><textarea value={profile.bio} onChange={(e) => updateProfile('bio', e.target.value)} placeholder="Tell Therafam a little about yourself…" rows={4} maxLength={500} /></label>
-              {profileError && <div className="form-error">{profileError}</div>}
-              <div className="settings-footer"><span>{profileSaved ? 'Profile saved.' : userId ? 'Your profile is stored securely with your account.' : 'Sign in to save your profile.'}</span><button className="primary-action" type="button" onClick={saveProfile} disabled={profileSaving || !userId}>{profileSaving ? 'Saving…' : 'Save profile'}</button></div>
+              <div className="field-row"><label><span><T>First name</T></span><input value={profile.first_name} onChange={(e) => updateProfile('first_name', e.target.value)} placeholder={translate("First name")} /></label><label><span><T>Last name</T></span><input value={profile.last_name} onChange={(e) => updateProfile('last_name', e.target.value)} placeholder={translate("Last name")} /></label></div>
+              <div className="field-row"><label><span><T>Phone number</T></span><input value={profile.phone_number} onChange={(e) => updateProfile('phone_number', e.target.value)} placeholder={translate("Phone number")} /></label><label><span><T>Time zone</T></span><select value={profile.timezone} onChange={(e) => updateProfile('timezone', e.target.value)}><option value="Africa/Lagos"><T>West Africa Time (Lagos)</T></option><option value="UTC">UTC</option><option value="Europe/London"><T>London</T></option></select></label></div>
+              <label><span><T>About you</T></span><textarea value={profile.bio} onChange={(e) => updateProfile('bio', e.target.value)} placeholder={translate("Tell Therafam a little about yourself…")} rows={4} maxLength={500} /></label>
+              {profileError && <div className="form-error"><T>{profileError}</T></div>}
+              <div className="settings-footer"><span><T>{profileSaved ? 'Profile saved.' : userId ? 'Your profile is stored securely with your account.' : 'Sign in to save your profile.'}</T></span><button className="primary-action" type="button" onClick={saveProfile} disabled={profileSaving || !userId}><T>{profileSaving ? 'Saving…' : 'Save profile'}</T></button></div>
             </div>
           </div>
         </section>
 
         <div className="settings-grid">
-          <section className="settings-card"><h2>Notifications</h2><SettingToggle label="Email notifications" checked={settings.email_notifications} onChange={(v) => update('email_notifications', v)} /><SettingToggle label="Push notifications" checked={settings.push_notifications} onChange={(v) => update('push_notifications', v)} /><SettingToggle label="Appointment reminders" checked={settings.appointment_reminders} onChange={(v) => update('appointment_reminders', v)} /><SettingToggle label="AI conversation notifications" checked={settings.ai_chat_notifications} onChange={(v) => update('ai_chat_notifications', v)} /></section>
-          <section className="settings-card"><h2>Privacy</h2><label className="setting-select"><span>Profile visibility</span><select value={settings.profile_visibility} onChange={(e) => update('profile_visibility', e.target.value as AppSettings['profile_visibility'])}><option value="private">Private</option><option value="therapists_only">Therapists only</option><option value="public">Public</option></select></label><SettingToggle label="Share data for service improvement" checked={settings.data_sharing} onChange={(v) => update('data_sharing', v)} /><SettingToggle label="Allow analytics" checked={settings.analytics_opt_in} onChange={(v) => update('analytics_opt_in', v)} /><SettingToggle label="Automatically save AI chats" checked={settings.auto_save_chat} onChange={(v) => update('auto_save_chat', v)} /></section>
-          <section className="settings-card"><h2>Appearance</h2><label className="setting-select"><span>Theme</span><select value={settings.theme} onChange={(e) => update('theme', e.target.value as AppSettings['theme'])}><option value="light">Light</option><option value="dark">Dark</option><option value="auto">System</option></select></label><label className="setting-select"><span>Language</span><select value={settings.language} onChange={(e) => update('language', e.target.value as Language)}><option value="en">English</option><option value="es">Español</option></select></label></section>
+          <section className="settings-card"><h2><T>Notifications</T></h2><SettingToggle label="Email notifications" checked={settings.email_notifications} onChange={(v) => update('email_notifications', v)} /><SettingToggle label="Push notifications" checked={settings.push_notifications} onChange={(v) => update('push_notifications', v)} /><SettingToggle label="Appointment reminders" checked={settings.appointment_reminders} onChange={(v) => update('appointment_reminders', v)} /><SettingToggle label="AI conversation notifications" checked={settings.ai_chat_notifications} onChange={(v) => update('ai_chat_notifications', v)} /></section>
+          <section className="settings-card"><h2><T>Privacy</T></h2><label className="setting-select"><span><T>Profile visibility</T></span><select value={settings.profile_visibility} onChange={(e) => update('profile_visibility', e.target.value as AppSettings['profile_visibility'])}><option value="private"><T>Private</T></option><option value="therapists_only"><T>Therapists only</T></option><option value="public"><T>Public</T></option></select></label><SettingToggle label="Share data for service improvement" checked={settings.data_sharing} onChange={(v) => update('data_sharing', v)} /><SettingToggle label="Allow analytics" checked={settings.analytics_opt_in} onChange={(v) => update('analytics_opt_in', v)} /><SettingToggle label="Automatically save AI chats" checked={settings.auto_save_chat} onChange={(v) => update('auto_save_chat', v)} /></section>
+          <section className="settings-card"><h2><T>Appearance</T></h2><label className="setting-select"><span><T>Theme</T></span><select value={settings.theme} onChange={(e) => update('theme', e.target.value as AppSettings['theme'])}><option value="light"><T>Light</T></option><option value="dark"><T>Dark</T></option><option value="auto"><T>System</T></option></select></label><label className="setting-select"><span><T>Language</T></span><select value={settings.language} onChange={(e) => update('language', e.target.value as Language)}>{LANGUAGES.map((item)=><option key={item.code} value={item.code}><T>{item.label}</T></option>)}</select></label></section>
         </div>
-        <div className="settings-footer"><span>{saved ? 'Settings saved.' : userId ? 'Changes are saved to your account.' : 'Demo mode — sign in to persist settings.'}</span><button className="primary-action" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+        <div className="settings-footer"><span><T>{saved ? 'Settings saved.' : userId ? 'Changes are saved to your account.' : 'Demo mode — sign in to persist settings.'}</T></span><button className="primary-action" onClick={save} disabled={saving}><T>{saving ? 'Saving…' : 'Save changes'}</T></button></div>
 
         <section className="settings-card danger-zone">
-          <div><span className="eyebrow">Account</span><h2>Sign out</h2><p>End your current Therafam session on this device.</p></div>
-          <button className="logout-action" type="button" onClick={handleLogout} disabled={loggingOut}>{loggingOut ? 'Signing out…' : 'Log out'}</button>
+          <div><span className="eyebrow"><T>Account</T></span><h2><T>Sign out</T></h2><p><T>End your current Therafam session on this device.</T></p></div>
+          <button className="logout-action" type="button" onClick={handleLogout} disabled={loggingOut}><T>{loggingOut ? 'Signing out…' : 'Log out'}</T></button>
         </section>
       </div>
     </section>
@@ -128,5 +129,5 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
 }
 
 function SettingToggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return <label className="setting-toggle"><span>{label}</span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><i aria-hidden="true" /></label>;
+  return <label className="setting-toggle"><span><T>{label}</T></span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><i aria-hidden="true" /></label>;
 }
