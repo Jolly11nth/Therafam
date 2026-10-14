@@ -328,6 +328,11 @@ const rows: Record<string, LocaleRow> = {
   'Mental wellness professional': ['Profesional de bienestar mental', 'Professionnel du bien-être mental', 'Profissional de bem-estar mental', 'مختص في العافية النفسية', 'Mtaalamu wa ustawi wa akili', 'Ƙwararren jin daɗin tunani', 'Akọ́ṣẹ́mọṣẹ́ ìlera ọpọlọ', 'Ọkachamara ọdịmma uche'],
   'Loading…': ['Cargando…', 'Chargement…', 'Carregando…', 'جارٍ التحميل…', 'Inapakia…', 'Ana lodawa…', 'Ń gbé wá…', 'Na-ebufe…'],
   'reviews': ['reseñas', 'avis', 'avaliações', 'تقييمات', 'maoni', 'sharhi', 'àyẹ̀wò', 'nyocha'],
+  'Date': ['Fecha', 'Date', 'Data', 'التاريخ', 'Tarehe', 'Rana', 'Ọjọ́', 'Ụbọchị'],
+  'Time': ['Hora', 'Heure', 'Hora', 'الوقت', 'Saa', 'Lokaci', 'Àkókò', 'Oge'],
+  'Video': ['Vídeo', 'Vidéo', 'Vídeo', 'فيديو', 'Video', 'Bidiyo', 'Fídíò', 'Vidiyo'],
+  'Audio': ['Audio', 'Audio', 'Áudio', 'صوت', 'Sauti', 'Sauti', 'Ohùn', 'Olu'],
+  'Chat': ['Chat', 'Discussion', 'Chat', 'محادثة', 'Mazungumzo', 'Tattaunawa', 'Ìjíròrò', 'Mkparịta ụka'],
 };
 
 const localeOrder: Language[] = ['es', 'fr', 'pt', 'ar', 'sw', 'ha', 'yo', 'ig'];
