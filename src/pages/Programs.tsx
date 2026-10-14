@@ -1,3 +1,4 @@
+import { T, translate } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import Brand from '../components/Brand';
 import { getLessons, getPrograms, type Program } from '../lib/therafamApi';
@@ -51,49 +52,49 @@ export default function Programs({ onBack, onHome }: Props) {
   return (
     <section className="workspace-shell">
       <header className="workspace-topbar">
-        <button className="workspace-brand" onClick={onHome} aria-label="Go home"><Brand compact /></button>
-        <button className="text-link" onClick={onBack}>Back to dashboard</button>
+        <button className="workspace-brand" onClick={onHome} aria-label={translate("Go home")}><Brand compact /></button>
+        <button className="text-link" onClick={onBack}><T>Back to dashboard</T></button>
       </header>
       <div className="workspace-content">
-        <div className="workspace-heading"><div><span className="eyebrow">Learn at your pace</span><h1>Programs & lessons</h1><p>Evidence-informed educational content designed to support everyday wellbeing.</p></div></div>
+        <div className="workspace-heading"><div><span className="eyebrow"><T>Learn at your pace</T></span><h1><T>Programs & lessons</T></h1><p><T>Evidence-informed educational content designed to support everyday wellbeing.</T></p></div></div>
 
         {selected ? (
           <section className="program-detail">
-            <button className="text-link" onClick={() => { setSelected(null); setSelectedLesson(null); }}>← All programs</button>
-            <span className="program-category">{selected.category}</span>
-            <h2>{selected.title}</h2>
-            <p>{selected.description}</p>
-            <div className="detail-meta"><span>{selected.difficulty_level}</span><span>{selected.estimated_duration_days ?? '—'} days</span><span>{selected.total_lessons ?? lessons.length} lessons</span></div>
+            <button className="text-link" onClick={() => { setSelected(null); setSelectedLesson(null); }}><T>← All programs</T></button>
+            <span className="program-category"><T>{selected.category}</T></span>
+            <h2><T>{selected.title}</T></h2>
+            <p><T>{selected.description}</T></p>
+            <div className="detail-meta"><span><T>{selected.difficulty_level}</T></span><span>{selected.estimated_duration_days ?? '—'} days</span><span>{selected.total_lessons ?? lessons.length} lessons</span></div>
             {selectedLesson ? (
               <article className="lesson-viewer">
-                <button className="text-link" onClick={() => setSelectedLesson(null)}>← Back to lessons</button>
+                <button className="text-link" onClick={() => setSelectedLesson(null)}><T>← Back to lessons</T></button>
                 <span className="lesson-number">Lesson {selectedLesson.lesson_number}</span>
-                <h2>{selectedLesson.title}</h2>
-                <p>{selectedLesson.content || selectedLesson.description || 'Lesson content will appear here when connected.'}</p>
-                <button className="primary-action" onClick={() => setSelectedLesson(null)}>Mark as reviewed</button>
+                <h2><T>{selectedLesson.title}</T></h2>
+                <p><T>{selectedLesson.content || selectedLesson.description || 'Lesson content will appear here when connected.'}</T></p>
+                <button className="primary-action" onClick={() => setSelectedLesson(null)}><T>Mark as reviewed</T></button>
               </article>
             ) : (
               <div className="lesson-list">
                 {getDisplayLessons().map((lesson) => (
                   <article className="lesson-row" key={lesson.id}>
-                    <span className="lesson-number">{lesson.lesson_number}</span>
-                    <div><strong>{lesson.title}</strong><p>{lesson.description}</p></div>
-                    <button className="outline-action" onClick={() => setSelectedLesson(lesson)}>Open</button>
+                    <span className="lesson-number"><T>{lesson.lesson_number}</T></span>
+                    <div><strong><T>{lesson.title}</T></strong><p><T>{lesson.description}</T></p></div>
+                    <button className="outline-action" onClick={() => setSelectedLesson(lesson)}><T>Open</T></button>
                   </article>
                 ))}
               </div>
             )}
-            {loadingLessons && <p className="loading-copy">Loading lessons…</p>}
+            {loadingLessons && <p className="loading-copy"><T>Loading lessons…</T></p>}
           </section>
         ) : (
           <div className="program-grid large">
             {programs.map((program) => (
               <article className="program-card" key={program.id}>
-                <span className="program-category">{program.category}</span>
-                <h3>{program.title}</h3>
-                <p>{program.description}</p>
+                <span className="program-category"><T>{program.category}</T></span>
+                <h3><T>{program.title}</T></h3>
+                <p><T>{program.description}</T></p>
                 <div className="program-meta"><span>{program.total_lessons ?? 0} lessons</span><span>{program.estimated_duration_days ?? '—'} days</span></div>
-                <button className="primary-action" onClick={() => openProgram(program)}>View program</button>
+                <button className="primary-action" onClick={() => openProgram(program)}><T>View program</T></button>
               </article>
             ))}
           </div>
