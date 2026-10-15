@@ -81,6 +81,7 @@ CREATE TABLE therapist_profiles (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     license_number VARCHAR(50) UNIQUE,
+    professional_title VARCHAR(120),
     license_state VARCHAR(50),
     license_expiry_date DATE,
     specializations TEXT[],
