@@ -52,5 +52,5 @@ export async function getSubscription(userId:string){return api<SubscriptionStat
 export type ExternalSelfHelpResource={title:string;summary:string;url:string;source:string};
 export async function searchExternalSelfHelpResources(query:string,language:'en'|'es'='en'){
  const params=new URLSearchParams({q:query,language});
- return api<{query:string;language:'en'|'es';source:string;attribution:string;results:ExternalSelfHelpResource[]}>(`/api/external/self-help-resources?${params.toString()}",{},getStoredUserId());
+ return api<{query:string;language:'en'|'es';source:string;attribution:string;results:ExternalSelfHelpResource[]}>(`/api/external/self-help-resources?${params.toString()}`,{},getStoredUserId());
 }
