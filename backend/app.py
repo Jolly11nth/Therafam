@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from psycopg.types.json import Jsonb
@@ -155,7 +155,7 @@ def health():
         missing_columns = ["therapist_profiles.professional_title"]
         vector = False
     ready = db and not missing and not missing_extensions and not missing_columns
-    return {
+    payload = {
         "status": "ok" if ready else "degraded" if db else "unavailable",
         "service": "therafam-api",
         "database_configured": db,
@@ -165,6 +165,9 @@ def health():
         "missing_extensions": missing_extensions,
         "vector_extension": vector,
     }
+    # Railway treats any 2xx response as healthy, so use 503 while the schema
+    # or required extensions are incomplete instead of falsely reporting health.
+    return JSONResponse(status_code=200 if ready else 503, content=payload)
 
 @app.post("/api/auth/signup")
 def signup(p: SignupRequest):
