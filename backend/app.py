@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from psycopg.types.json import Jsonb
 
 from .auth import current_user, hash_password, issue_session, revoke_session, verify_password
 from .db import execute, many, one
@@ -83,11 +84,25 @@ class SessionCreate(BaseModel):
     session_format: Literal["video", "audio", "in_person", "chat"] = "video"
 class SessionStatusUpdate(BaseModel): status: Literal["scheduled", "in_progress", "completed", "cancelled", "no_show"]
 class MessageCreate(BaseModel): recipient_id: str; message_text: str = Field(min_length=1, max_length=5000); session_id: str | None = None
+class TherapistNoteCreate(BaseModel):
+    session_id: str
+    session_summary: str = Field(min_length=1, max_length=10000)
+    client_mood: str | None = Field(default=None, max_length=50)
+    topics_discussed: list[str] = Field(default_factory=list, max_length=20)
+    interventions_used: list[str] = Field(default_factory=list, max_length=20)
+    homework_assigned: str | None = Field(default=None, max_length=5000)
+    client_progress_notes: str | None = Field(default=None, max_length=5000)
+    risk_assessment: Literal["low", "medium", "high", "crisis"] | None = None
+    treatment_plan_updates: str | None = Field(default=None, max_length=5000)
+    medication_notes: str | None = Field(default=None, max_length=3000)
+    next_session_goals: list[str] = Field(default_factory=list, max_length=20)
+    follow_up_actions: list[str] = Field(default_factory=list, max_length=20)
 class SubscriptionUpgrade(BaseModel): plan: Literal["premium_monthly", "premium_annual"] = "premium_monthly"
 
 def clean(row: dict[str, Any] | None):
     if row is None: return None
-    return {k: (str(v) if k in {"id","user_id","therapist_id","client_id","session_id","program_id"} and v is not None else v) for k,v in row.items()}
+    uuid_keys = {"id", "user_id", "therapist_id", "client_id", "sender_id", "recipient_id", "session_id", "program_id", "lesson_id"}
+    return {k: (str(v) if k in uuid_keys and v is not None else v) for k,v in row.items()}
 def therapist(user):
     if user.get("user_type") != "therapist": raise HTTPException(403, "Therapist access required")
     return user
@@ -97,9 +112,35 @@ def public_user(user):
 
 @app.get("/api/health")
 def health():
-    try: one("SELECT 1 AS ok"); db=True
-    except Exception: db=False
-    return {"status":"ok","service":"therafam-api","database_configured":db}
+    required_tables = [
+        "users", "user_sessions", "user_profiles", "user_settings", "therapist_profiles",
+        "therapist_availability", "therapist_client_relationships", "therapy_sessions",
+        "therapy_session_notes", "chat_messages", "ai_interactions", "mood_entries",
+        "self_help_programs", "lessons", "lesson_progress", "notifications",
+        "user_subscriptions", "therapist_earnings", "therapist_performance", "therapist_reviews",
+    ]
+    try:
+        one("SELECT 1 AS ok")
+        existing = {row["tablename"] for row in many(
+            "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename = ANY(%s)",
+            (required_tables,),
+        )}
+        missing = [table for table in required_tables if table not in existing]
+        vector = bool(one("SELECT 1 FROM pg_extension WHERE extname='vector'"))
+        db = True
+    except Exception:
+        db = False
+        missing = required_tables
+        vector = False
+    ready = db and not missing
+    return {
+        "status": "ok" if ready and vector else "degraded" if db else "unavailable",
+        "service": "therafam-api",
+        "database_configured": db,
+        "schema_ready": ready,
+        "missing_tables": missing,
+        "vector_extension": vector,
+    }
 
 @app.post("/api/auth/signup")
 def signup(p: SignupRequest):
@@ -153,12 +194,59 @@ def chat(p: ChatRequest, user=Depends(current_user)):
         pass
     return result
 
+@app.get("/api/chat/history")
+def chat_history(limit: int = 50, user=Depends(current_user)):
+    rows = many(
+        """SELECT id,input_text,response_text,created_at
+           FROM (
+               SELECT id,input_text,response_text,created_at
+               FROM ai_interactions WHERE user_id=%s
+               ORDER BY created_at DESC LIMIT %s
+           ) recent
+           ORDER BY created_at ASC""",
+        (user["id"], max(1, min(limit, 100))),
+    )
+    return {"interactions": [clean(row) for row in rows]}
+
 @app.get("/api/programs")
 def programs(user=Depends(current_user)):
     return {"programs":[clean(r) for r in many("SELECT id,title,description,category,difficulty_level,estimated_duration_days,thumbnail_url,tags,total_lessons FROM self_help_programs WHERE is_published=TRUE ORDER BY created_at ASC")]}
 @app.get("/api/programs/{program_id}/lessons")
 def lessons(program_id,user=Depends(current_user)):
     return {"lessons":[clean(r) for r in many("SELECT id,program_id,title,description,lesson_number,content_type,content_text,duration_minutes,learning_objectives,key_concepts,exercises FROM lessons WHERE program_id=%s AND is_published=TRUE ORDER BY lesson_number ASC",(program_id,))]}
+@app.get("/api/programs/{program_id}/progress")
+def program_progress(program_id: str, user=Depends(current_user)):
+    if not one("SELECT id FROM self_help_programs WHERE id=%s AND is_published=TRUE", (program_id,)):
+        raise HTTPException(404, "Program not found")
+    rows = many(
+        """SELECT lesson_id,status,progress_percentage,started_at,completed_at,updated_at
+           FROM lesson_progress WHERE user_id=%s AND program_id=%s""",
+        (user["id"], program_id),
+    )
+    return {"progress": [clean(row) for row in rows]}
+
+@app.post("/api/programs/{program_id}/lessons/{lesson_id}/complete")
+def complete_lesson(program_id: str, lesson_id: str, user=Depends(current_user)):
+    lesson = one(
+        """SELECT id FROM lessons
+           WHERE id=%s AND program_id=%s AND is_published=TRUE""",
+        (lesson_id, program_id),
+    )
+    if not lesson:
+        raise HTTPException(404, "Lesson not found in this published program")
+    row = execute(
+        """INSERT INTO lesson_progress
+           (user_id,program_id,lesson_id,status,progress_percentage,started_at,completed_at,updated_at)
+           VALUES(%s,%s,%s,'completed',100,NOW(),NOW(),NOW())
+           ON CONFLICT(user_id,lesson_id) DO UPDATE
+           SET status='completed',progress_percentage=100,
+               started_at=COALESCE(lesson_progress.started_at,NOW()),
+               completed_at=NOW(),updated_at=NOW()
+           RETURNING *""",
+        (user["id"], program_id, lesson_id),
+    )
+    return {"progress": clean(row), "completed": True}
+
 @app.get("/api/mood")
 def get_mood(limit:int=14,user=Depends(current_user)):
     return {"entries":[clean(r) for r in many("SELECT * FROM mood_entries WHERE user_id=%s ORDER BY entry_date DESC LIMIT %s",(user["id"],max(1,min(limit,100))))]}
@@ -212,9 +300,26 @@ def availability(p:AvailabilityUpdate,user=Depends(current_user)):
     if not r: r=execute("INSERT INTO therapist_profiles(user_id,is_accepting_clients) VALUES(%s,%s) RETURNING *",(user["id"],p.is_accepting_clients))
     return {"is_accepting_clients":p.is_accepting_clients,"profile":clean(r)}
 @app.get("/api/therapist/clients")
-def clients(user=Depends(current_user)): therapist(user); return {"clients":[clean(r) for r in many("SELECT * FROM therapist_client_relationships WHERE therapist_id=%s ORDER BY created_at DESC",(user["id"],))]}
+def clients(user=Depends(current_user)):
+    therapist(user)
+    rows = many("""SELECT r.id,r.therapist_id,r.client_id,r.status,r.start_date,r.end_date,r.notes,r.created_at,
+                          u.email AS client_email,up.first_name AS client_first_name,up.last_name AS client_last_name
+                   FROM therapist_client_relationships r
+                   JOIN users u ON u.id=r.client_id
+                   LEFT JOIN user_profiles up ON up.user_id=u.id
+                   WHERE r.therapist_id=%s ORDER BY r.created_at DESC""", (user["id"],))
+    return {"clients": [clean(row) for row in rows]}
+
 @app.get("/api/therapist/sessions")
-def sessions(user=Depends(current_user)): therapist(user); return {"sessions":[clean(r) for r in many("SELECT * FROM therapy_sessions WHERE therapist_id=%s ORDER BY scheduled_start_time ASC",(user["id"],))]}
+def sessions(user=Depends(current_user)):
+    therapist(user)
+    rows = many("""SELECT ts.*,u.email AS client_email,up.first_name AS client_first_name,up.last_name AS client_last_name
+                   FROM therapy_sessions ts
+                   JOIN users u ON u.id=ts.client_id
+                   LEFT JOIN user_profiles up ON up.user_id=u.id
+                   WHERE ts.therapist_id=%s ORDER BY ts.scheduled_start_time ASC""", (user["id"],))
+    return {"sessions": [clean(row) for row in rows]}
+
 @app.post("/api/therapist/sessions")
 def create_session(p:SessionCreate,user=Depends(current_user)):
     therapist(user); r=execute("INSERT INTO therapy_sessions(therapist_id,client_id,scheduled_start_time,scheduled_end_time,session_type,session_format) VALUES(%s,%s,%s,%s,%s,%s) RETURNING *",(user["id"],p.client_id,p.scheduled_start_time,p.scheduled_end_time,p.session_type,p.session_format)); return {"session":clean(r)}
@@ -224,16 +329,124 @@ def session_status(session_id:str,p:SessionStatusUpdate,user=Depends(current_use
     if not r: raise HTTPException(404,"Session not found")
     return {"session":clean(r)}
 @app.get("/api/therapist/notes")
-def notes(user=Depends(current_user)): therapist(user); return {"notes":[clean(r) for r in many("SELECT * FROM therapy_session_notes WHERE therapist_id=%s ORDER BY created_at DESC",(user["id"],))]}
+def notes(user=Depends(current_user)):
+    therapist(user)
+    return {"notes": [clean(row) for row in many(
+        "SELECT * FROM therapy_session_notes WHERE therapist_id=%s ORDER BY created_at DESC LIMIT 200",
+        (user["id"],),
+    )]}
+
+@app.post("/api/therapist/notes")
+def create_therapist_note(payload: TherapistNoteCreate, user=Depends(current_user)):
+    therapist(user)
+    if not one("SELECT id FROM therapy_sessions WHERE id=%s AND therapist_id=%s", (payload.session_id, user["id"])):
+        raise HTTPException(404, "Session not found for this therapist")
+    row = execute(
+        """INSERT INTO therapy_session_notes
+           (session_id,therapist_id,session_summary,client_mood,topics_discussed,interventions_used,
+            homework_assigned,client_progress_notes,risk_assessment,treatment_plan_updates,
+            medication_notes,next_session_goals,follow_up_actions)
+           VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+        (payload.session_id,user["id"],payload.session_summary,payload.client_mood,
+         payload.topics_discussed,payload.interventions_used,payload.homework_assigned,
+         payload.client_progress_notes,payload.risk_assessment,payload.treatment_plan_updates,
+         payload.medication_notes,payload.next_session_goals,payload.follow_up_actions),
+    )
+    return {"note": clean(row), "saved": True}
+
 @app.get("/api/therapist/messages")
-def therapist_messages(user=Depends(current_user)): therapist(user); return {"messages":[clean(r) for r in many("SELECT * FROM chat_messages WHERE conversation_type='therapist_chat' AND (sender_id=%s OR recipient_id=%s) ORDER BY created_at ASC LIMIT 200",(user["id"],user["id"]))]}
+def therapist_messages(user=Depends(current_user)):
+    therapist(user)
+    return {"messages": [clean(row) for row in many(
+        """SELECT * FROM chat_messages WHERE conversation_type='therapist_chat'
+           AND (sender_id=%s OR recipient_id=%s) ORDER BY created_at ASC LIMIT 200""",
+        (user["id"], user["id"]),
+    )]}
+
+@app.get("/api/messages/contacts")
+def message_contacts(user=Depends(current_user)):
+    if user["user_type"] == "therapist":
+        rows = many(
+            """SELECT u.id,u.email,u.user_type,up.first_name,up.last_name
+               FROM therapist_client_relationships r
+               JOIN users u ON u.id=r.client_id
+               LEFT JOIN user_profiles up ON up.user_id=u.id
+               WHERE r.therapist_id=%s AND r.status='active' AND u.is_active=TRUE
+               ORDER BY up.last_name,up.first_name,u.email""",
+            (user["id"],),
+        )
+    else:
+        rows = many(
+            """SELECT u.id,u.email,u.user_type,tp.first_name,tp.last_name
+               FROM therapist_client_relationships r
+               JOIN users u ON u.id=r.therapist_id
+               LEFT JOIN therapist_profiles tp ON tp.user_id=u.id
+               WHERE r.client_id=%s AND r.status='active' AND u.is_active=TRUE
+               ORDER BY tp.last_name,tp.first_name,u.email""",
+            (user["id"],),
+        )
+    return {"contacts": [clean(row) for row in rows]}
+
+@app.get("/api/messages/with/{contact_id}")
+def messages_with_contact(contact_id: str, user=Depends(current_user)):
+    if user["user_type"] == "therapist":
+        relation = one(
+            """SELECT id FROM therapist_client_relationships
+               WHERE therapist_id=%s AND client_id=%s AND status='active'""",
+            (user["id"], contact_id),
+        )
+    else:
+        relation = one(
+            """SELECT id FROM therapist_client_relationships
+               WHERE client_id=%s AND therapist_id=%s AND status='active'""",
+            (user["id"], contact_id),
+        )
+    if not relation:
+        raise HTTPException(403, "Messaging is limited to an active care-team relationship")
+    rows = many(
+        """SELECT id,sender_id,recipient_id,message_text,created_at,is_read
+           FROM chat_messages WHERE conversation_type='therapist_chat'
+             AND ((sender_id=%s AND recipient_id=%s) OR (sender_id=%s AND recipient_id=%s))
+           ORDER BY created_at ASC LIMIT 200""",
+        (user["id"], contact_id, contact_id, user["id"]),
+    )
+    return {"messages": [clean(row) for row in rows]}
+
 @app.post("/api/messages")
 def messages(p:MessageCreate,user=Depends(current_user)):
-    if not one("SELECT id FROM users WHERE id=%s AND is_active=TRUE",(p.recipient_id,)): raise HTTPException(404,"Recipient not found")
-    r=execute("INSERT INTO chat_messages(conversation_type,sender_id,recipient_id,message_text,session_id) VALUES('therapist_chat',%s,%s,%s,%s) RETURNING *",(user["id"],p.recipient_id,p.message_text,p.session_id)); return {"message":clean(r)}
+    recipient = one("SELECT id,user_type FROM users WHERE id=%s AND is_active=TRUE", (p.recipient_id,))
+    if not recipient:
+        raise HTTPException(404, "Recipient not found")
+    if user["user_type"] == "therapist":
+        allowed = recipient["user_type"] == "client" and one(
+            """SELECT id FROM therapist_client_relationships
+               WHERE therapist_id=%s AND client_id=%s AND status='active'""",
+            (user["id"], p.recipient_id),
+        )
+    else:
+        allowed = recipient["user_type"] == "therapist" and one(
+            """SELECT id FROM therapist_client_relationships
+               WHERE client_id=%s AND therapist_id=%s AND status='active'""",
+            (user["id"], p.recipient_id),
+        )
+    if not allowed:
+        raise HTTPException(403, "Messaging is limited to an active care-team relationship")
+    if p.session_id and not one(
+        """SELECT id FROM therapy_sessions WHERE id=%s
+           AND ((therapist_id=%s AND client_id=%s) OR (therapist_id=%s AND client_id=%s))""",
+        (p.session_id, user["id"], p.recipient_id, p.recipient_id, user["id"]),
+    ):
+        raise HTTPException(400, "Session does not belong to this care-team conversation")
+    row = execute(
+        """INSERT INTO chat_messages(conversation_type,sender_id,recipient_id,message_text,session_id)
+           VALUES('therapist_chat',%s,%s,%s,%s) RETURNING *""",
+        (user["id"],p.recipient_id,p.message_text,p.session_id),
+    )
+    return {"message": clean(row)}
+
 @app.post("/api/support")
 def support(p:SupportRequest,user=Depends(current_user)):
-    r=execute("INSERT INTO notifications(user_id,title,message,notification_type,priority,metadata) VALUES(%s,%s,%s,'system_update','normal',%s) RETURNING *",(user["id"],"Support request" if p.category=="contact" else "Problem report",p.message,{"category":p.category})); return {"submitted":True,"record":clean(r)}
+    r=execute("INSERT INTO notifications(user_id,title,message,notification_type,priority,metadata) VALUES(%s,%s,%s,'system_update','normal',%s) RETURNING *",(user["id"],"Support request" if p.category=="contact" else "Problem report",p.message,Jsonb({"category":p.category}))); return {"submitted":True,"record":clean(r)}
 
 @app.get("/api/subscription")
 def subscription(user=Depends(current_user)):
