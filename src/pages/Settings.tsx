@@ -1,9 +1,8 @@
 import { T, translate, LANGUAGES } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/Brand';
-import { getSettings, getStoredUserId, getUserProfile, saveSettings, saveUserProfile, uploadProfileImage, type AppSettings, type UserProfile } from '../lib/therafamApi';
+import { getSettings, getStoredUserId, getUserProfile, saveSettings, saveUserProfile, signOutAccount, uploadProfileImage, type AppSettings, type UserProfile } from '../lib/therafamApi';
 import { applyTheme, getLanguage, getTheme, setLanguage, type Language, type Theme } from '../lib/preferences';
-import { signOutAccount } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void; onLogout: () => void };
 
