@@ -239,6 +239,11 @@ def chat(p: ChatRequest, user=Depends(current_user)):
     except Exception as exc:
         # Avoid leaking database/provider details to the client.
         raise HTTPException(502, "Therafam AI is temporarily unavailable") from exc
+    prefs = one("SELECT auto_save_chat FROM user_settings WHERE user_id=%s", (user["id"],))
+    if prefs is not None and not prefs["auto_save_chat"]:
+        result["history_saved"] = False
+        result["history_disabled"] = True
+        return result
     history_saved = False
     try:
         execute(
@@ -250,10 +255,14 @@ def chat(p: ChatRequest, user=Depends(current_user)):
         # Preserve the AI response but tell the client that persistence failed.
         history_saved = False
     result["history_saved"] = history_saved
+    result["history_disabled"] = False
     return result
 
 @app.get("/api/chat/history")
 def chat_history(limit: int = 50, user=Depends(current_user)):
+    prefs = one("SELECT auto_save_chat FROM user_settings WHERE user_id=%s", (user["id"],))
+    if prefs is not None and not prefs["auto_save_chat"]:
+        return {"interactions": [], "history_disabled": True}
     rows = many(
         """SELECT id,input_text,response_text,created_at
            FROM (
@@ -264,7 +273,7 @@ def chat_history(limit: int = 50, user=Depends(current_user)):
            ORDER BY created_at ASC""",
         (user["id"], max(1, min(limit, 100))),
     )
-    return {"interactions": [clean(row) for row in rows]}
+    return {"interactions": [clean(row) for row in rows], "history_disabled": False}
 
 @app.get("/api/programs")
 def programs(user=Depends(current_user)):
