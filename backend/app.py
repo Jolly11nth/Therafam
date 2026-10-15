@@ -113,11 +113,14 @@ def public_user(user):
 @app.get("/api/health")
 def health():
     required_tables = [
-        "users", "user_sessions", "user_profiles", "user_settings", "therapist_profiles",
-        "therapist_availability", "therapist_client_relationships", "therapy_sessions",
-        "therapy_session_notes", "chat_messages", "ai_interactions", "mood_entries",
+        "users", "email_verifications", "user_sessions", "user_profiles", "user_settings",
+        "therapist_profiles", "therapist_availability", "therapist_client_relationships",
+        "therapy_sessions", "therapy_session_notes", "therapy_notes", "chat_messages",
+        "ai_conversations", "crisis_logs", "ai_interactions", "documents", "mood_entries",
         "self_help_programs", "lessons", "lesson_progress", "notifications",
-        "user_subscriptions", "therapist_earnings", "therapist_performance", "therapist_reviews",
+        "revenue_transactions", "therapist_handoffs", "user_subscriptions",
+        "therapist_earnings", "therapist_performance", "therapist_reviews",
+        "therafam_knowledge_chunks",
     ]
     try:
         one("SELECT 1 AS ok")
