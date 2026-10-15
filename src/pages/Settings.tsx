@@ -105,7 +105,7 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
       <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><div className="workspace-top-actions"><button className="theme-button" onClick={() => update('theme', settings.theme === 'dark' ? 'light' : 'dark')}><T>{settings.theme === 'dark' ? '☀ Dark' : '☾ Light'}</T></button><button className="text-link" onClick={onBack}><T>Back to dashboard</T></button></div></header>
       <div className="workspace-content narrow-content">
         {settingsLoading && <p className="loading-copy"><T>Loading account settings…</T></p>}
-        {settingsError && <div className="form-error" role="alert"><T>{settingsError}</T></div>
+        {settingsError && <div className="form-error" role="alert"><T>{settingsError}</T></div>}
         <div className="workspace-heading"><div><span className="eyebrow"><T>Your account</T></span><h1><T>Settings</T></h1><p><T>Manage your profile, preferences, privacy, and Therafam experience.</T></p></div></div>
 
         <section className="settings-card profile-settings-card">
