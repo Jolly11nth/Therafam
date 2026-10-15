@@ -14,7 +14,8 @@ export function getStoredUserId(){return localStorage.getItem(USER_KEY)??''}expo
 export async function signOut(){try{await api('/api/auth/signout',{method:'POST'},getStoredUserId())}finally{localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(USER_KEY)}}
 export async function signIn(email:string,password:string){const r=await api<{user:{id:string};token:string}>('/api/auth/signin',{method:'POST',body:JSON.stringify({email,password})});setSession(r.token,r.user.id);return r}
 export async function signUp(payload:Record<string,unknown>){const r=await api<{user:{id:string};token:string}>('/api/auth/signup',{method:'POST',body:JSON.stringify(payload)});setSession(r.token,r.user.id);return r}
-export async function getHealth(){return api<{status:string;database_configured?:boolean}>('/api/health',{headers:{}})}
+export type DatabaseHealth={status:string;service?:string;database_configured?:boolean;schema_ready?:boolean;missing_tables?:string[];missing_extensions?:string[];vector_extension?:boolean};
+export async function getHealth(){return api<DatabaseHealth>('/api/health',{headers:{}})}
 export async function sendAiMessage(message:string,history:ChatMessage[]=[],userId?:string){return api<{response:string;conversation_id?:string;crisis?:boolean;demo?:boolean;history_saved?:boolean}>('/api/chat',{method:'POST',body:JSON.stringify({message,history,language:getLanguage()})},userId||getStoredUserId())}
 export type AiInteraction={id:string;input_text:string;response_text:string;created_at:string};
 export async function getAiChatHistory(userId:string=getStoredUserId()){return (await api<{interactions:AiInteraction[]}>('/api/chat/history?limit=50',{},userId)).interactions}
