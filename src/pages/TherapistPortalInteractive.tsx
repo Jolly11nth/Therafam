@@ -1,7 +1,7 @@
 import { T, translate } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import Brand from '../components/Brand';
-import { getStoredUserId, getTherapistClients, getTherapistEarnings, getTherapistMessages, getTherapistNotes, getTherapistProfile, getTherapistSessions, createTherapistNote, recalculateTherapistEarnings, saveTherapistProfile, setTherapistAvailability, updateTherapistSessionStatus } from '../lib/therafamApi';
+import { getMessageContacts, getMessagesWithContact, getStoredUserId, getTherapistClients, getTherapistEarnings, getTherapistNotes, getTherapistProfile, getTherapistSessions, createTherapistNote, recalculateTherapistEarnings, saveTherapistProfile, sendMessage, setTherapistAvailability, updateTherapistSessionStatus, type MessageContact } from '../lib/therafamApi';
 import '../styles/therapist-portal.css';
 
 type Props = { onBack: () => void; onHome: () => void };
@@ -49,6 +49,11 @@ function formatNaira(value:any){return new Intl.NumberFormat('en-NG',{style:'cur
 function ActionPage({screen,userId,clientCount,sessionCount}:{screen:Exclude<Screen,'dashboard'|'profile'|'availability'|'earnings'>;userId:string;clientCount:number;sessionCount:number}){
  const [items,setItems]=useState<any[]>([]);
  const [sessions,setSessions]=useState<any[]>([]);
+ const [contacts,setContacts]=useState<MessageContact[]>([]);
+ const [contactId,setContactId]=useState('');
+ const [messageDraft,setMessageDraft]=useState('');
+ const [sendingMessage,setSendingMessage]=useState(false);
+ const [loadingMessages,setLoadingMessages]=useState(false);
  const [loadingRows,setLoadingRows]=useState(true);
  const [savingId,setSavingId]=useState('');
  const [selectedSession,setSelectedSession]=useState('');
@@ -63,11 +68,27 @@ function ActionPage({screen,userId,clientCount,sessionCount}:{screen:Exclude<Scr
    if(screen==='clients'){const data=await getTherapistClients(userId);if(active)setItems(data.clients);}
    else if(screen==='schedule'){const data=await getTherapistSessions(userId);if(active)setItems(data.sessions);}
    else if(screen==='notes'){const [notesData,sessionsData]=await Promise.all([getTherapistNotes(userId),getTherapistSessions(userId)]);if(active){setItems(notesData.notes);setSessions(sessionsData.sessions);setSelectedSession((current)=>current||sessionsData.sessions[0]?.id||'');}}
-   else {const data=await getTherapistMessages(userId);if(active)setItems(data.messages);}
+   else if(screen==='messages'){const data=await getMessageContacts(userId);if(active){setContacts(data);setContactId(current=>current&&data.some(item=>item.id===current)?current:data[0]?.id??'');setItems([]);}}
   };
   load().catch((e)=>{if(active)setError(e instanceof Error?e.message:'Could not load this section from the database.');}).finally(()=>{if(active)setLoadingRows(false);});
   return()=>{active=false;};
  },[screen,userId]);
+ useEffect(()=>{
+  let active=true;
+  if(screen!=='messages'||!userId||!contactId){setItems([]);setLoadingMessages(false);return()=>{active=false;};}
+  setLoadingMessages(true);setError('');
+  getMessagesWithContact(contactId,userId).then(data=>{if(active)setItems(data);})
+    .catch(e=>{if(active)setError(e instanceof Error?e.message:'Could not load this conversation.');})
+    .finally(()=>{if(active)setLoadingMessages(false);});
+  return()=>{active=false;};
+ },[screen,userId,contactId]);
+ async function sendCareMessage(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();const text=messageDraft.trim();if(!userId||!contactId||!text||sendingMessage)return;
+  setSendingMessage(true);setError('');setMessage('');
+  try{const result=await sendMessage(userId,contactId,text);setItems(current=>[...current,result.message]);setMessageDraft('');}
+  catch(e){setError(e instanceof Error?e.message:'Could not send this message.');}
+  finally{setSendingMessage(false);}
+ }
  async function updateStatus(sessionId:string,status:'in_progress'|'completed'|'cancelled'){
   setSavingId(sessionId);setError('');setMessage('');
   try{const result=await updateTherapistSessionStatus(userId,sessionId,status);setItems(current=>current.map(item=>item.id===sessionId?{...item,...result.session}:item));setMessage('Session status saved.');}
@@ -94,8 +115,8 @@ function ActionPage({screen,userId,clientCount,sessionCount}:{screen:Exclude<Scr
   {screen==='notes'&&!loadingRows&&<form className="profile-form" onSubmit={saveNote}><label><T>Session</T><select value={selectedSession} onChange={e=>setSelectedSession(e.target.value)} required><option value=""><T>Choose a session</T></option>{sessions.map((s:any)=><option key={s.id} value={s.id}>{new Date(s.scheduled_start_time).toLocaleString()} · {s.client_first_name??s.client_email??s.client_id}</option>)}</select></label><label className="full"><T>Session summary</T><textarea value={noteText} onChange={e=>setNoteText(e.target.value)} required minLength={1} maxLength={10000} rows={5} placeholder={translate('Write your secure session summary…')}/></label><div className="profile-edit-actions"><button className="primary-action" type="submit" disabled={savingNote||!selectedSession||!noteText.trim()}><T>{savingNote?'Saving…':'Save session note'}</T></button></div></form>}
   {screen==='notes'&&!loadingRows&&items.length===0&&<div className="empty-state"><strong><T>No session notes yet</T></strong><p><T>Save a note above after choosing a session. Notes are visible only to the therapist who created them.</T></p></div>}
   {screen==='notes'&&items.map((item:any)=><article className="transaction-row" key={item.id}><div><strong><T>{sessions.find((s:any)=>s.id===item.session_id)?.client_first_name||'Session note'}</T></strong><p><T>{item.session_summary}</T></p><small><T>{new Date(item.created_at).toLocaleString()}</T></small></div><div>{item.risk_assessment&&<strong><T>Risk: {item.risk_assessment}</T></strong>}</div></article>)}
-  {screen==='messages'&&!loadingRows&&items.length===0&&<div className="empty-state"><strong><T>No messages yet</T></strong><p><T>Secure messages with your active clients will appear here.</T></p></div>}
-  {screen==='messages'&&items.map((item:any)=><article className="transaction-row" key={item.id}><div><strong><T>{item.sender_id===userId?'You':'Client message'}</T></strong><p><T>{item.message_text}</T></p></div><small><T>{new Date(item.created_at).toLocaleString()}</T></small></article>)}
+  {screen==='messages'&&!loadingRows&&contacts.length===0&&<div className="empty-state"><strong><T>No active care-team contacts</T></strong><p><T>Messages become available after a client has an active booking relationship with you.</T></p></div>}
+  {screen==='messages'&&contacts.length>0&&<section className="therapist-messages-panel"><label><T>Client</T><select value={contactId} onChange={e=>setContactId(e.target.value)}>{contacts.map(contact=><option key={contact.id} value={contact.id}>{`${contact.first_name??''} ${contact.last_name??''}`.trim()||contact.email}</option>)}</select></label><div className="message-list">{loadingMessages?<p className="loading-copy"><T>Loading conversation…</T></p>:items.length?items.map((item:any)=><article className={`message-item ${item.sender_id===userId?'mine':''}`} key={item.id}><div><strong><T>{item.sender_id===userId?'You':'Client'}</T></strong><p><T>{item.message_text}</T></p><small><T>{new Date(item.created_at).toLocaleString()}</T></small></div></article>):<div className="empty-state compact"><strong><T>No messages yet</T></strong><p><T>Send the first message to your client.</T></p></div>}</div><form className="message-composer" onSubmit={sendCareMessage}><input value={messageDraft} onChange={e=>setMessageDraft(e.target.value)} placeholder={translate('Write a message…')} disabled={sendingMessage||!contactId}/><button className="primary-action" type="submit" disabled={sendingMessage||!messageDraft.trim()||!contactId}><T>{sendingMessage?'Sending…':'Send'}</T></button></form></section>}
  </div>;
 }
 function Card({label,value,copy:description,action,onClick}:{label:string;value:string;copy:string;action:string;onClick:()=>void}){return <article className="dashboard-card"><span className="eyebrow"><T>{label}</T></span><strong className="workspace-stat"><T>{value}</T></strong><p><T>{description}</T></p><button className="outline-action" onClick={onClick}><T>{action}</T></button></article>}
