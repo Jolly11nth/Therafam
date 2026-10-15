@@ -72,6 +72,7 @@ class ProfileUpdate(BaseModel):
     timezone: str = Field(default="Africa/Lagos", max_length=50); language_preference: str = Field(default="en", max_length=20)
 class TherapistProfileUpdate(BaseModel):
     first_name: str | None = Field(default=None, max_length=100); last_name: str | None = Field(default=None, max_length=100)
+    professional_title: str | None = Field(default=None, max_length=120)
     license_number: str | None = Field(default=None, max_length=50); license_state: str | None = Field(default=None, max_length=50)
     specializations: list[str] = Field(default_factory=list); years_experience: int | None = Field(default=None, ge=0, le=70)
     bio: str | None = Field(default=None, max_length=500); phone_number: str | None = Field(default=None, max_length=20)
@@ -175,11 +176,11 @@ def signup(p: SignupRequest):
             if p.user_type == "therapist":
                 conn.execute(
                     """INSERT INTO therapist_profiles
-                       (user_id,first_name,last_name,license_number,specializations,
-                        years_experience,bio,phone_number)
-                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s)""",
-                    (uid, p.first_name, p.last_name, p.license_number,
-                     [p.specialization] if p.specialization else [],
+                       (user_id,first_name,last_name,professional_title,license_number,license_state,
+                        specializations,years_experience,bio,phone_number)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (uid, p.first_name, p.last_name, p.professional_title, p.license_number,
+                     p.practice_location, [p.specialization] if p.specialization else [],
                      p.years_experience, p.professional_bio, p.phone_number),
                 )
             else:
@@ -338,7 +339,7 @@ def therapist_dashboard(user=Depends(current_user)):
 def therapist_profile(user=Depends(current_user)): therapist(user); return {"profile":clean(one("SELECT * FROM therapist_profiles WHERE user_id=%s",(user["id"],)))}
 @app.put("/api/therapist/profile")
 def save_therapist(p:TherapistProfileUpdate,user=Depends(current_user)):
-    therapist(user); d=p.model_dump(); r=execute("""INSERT INTO therapist_profiles(user_id,first_name,last_name,license_number,license_state,specializations,years_experience,bio,phone_number,timezone,languages_spoken) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(user_id) DO UPDATE SET first_name=EXCLUDED.first_name,last_name=EXCLUDED.last_name,license_number=EXCLUDED.license_number,license_state=EXCLUDED.license_state,specializations=EXCLUDED.specializations,years_experience=EXCLUDED.years_experience,bio=EXCLUDED.bio,phone_number=EXCLUDED.phone_number,timezone=EXCLUDED.timezone,languages_spoken=EXCLUDED.languages_spoken,updated_at=NOW() RETURNING *""",(user["id"],d["first_name"],d["last_name"],d["license_number"],d["license_state"],d["specializations"],d["years_experience"],d["bio"],d["phone_number"],d["timezone"],d["languages_spoken"]))
+    therapist(user); d=p.model_dump(); r=execute("""INSERT INTO therapist_profiles(user_id,first_name,last_name,professional_title,license_number,license_state,specializations,years_experience,bio,phone_number,timezone,languages_spoken) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(user_id) DO UPDATE SET first_name=EXCLUDED.first_name,last_name=EXCLUDED.last_name,professional_title=EXCLUDED.professional_title,license_number=EXCLUDED.license_number,license_state=EXCLUDED.license_state,specializations=EXCLUDED.specializations,years_experience=EXCLUDED.years_experience,bio=EXCLUDED.bio,phone_number=EXCLUDED.phone_number,timezone=EXCLUDED.timezone,languages_spoken=EXCLUDED.languages_spoken,updated_at=NOW() RETURNING *""",(user["id"],d["first_name"],d["last_name"],d["professional_title"],d["license_number"],d["license_state"],d["specializations"],d["years_experience"],d["bio"],d["phone_number"],d["timezone"],d["languages_spoken"]))
     return {"profile":clean(r)}
 @app.put("/api/therapist/availability")
 def availability(p:AvailabilityUpdate,user=Depends(current_user)):
