@@ -1,53 +1,66 @@
 import { T, translate } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import Brand from '../components/Brand';
-import { getLessons, getPrograms, type Program } from '../lib/therafamApi';
+import { completeLesson, getLessons, getProgramProgress, getPrograms, type Program } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void };
 
-type Lesson = { id: string; lesson_number: number; title: string; description?: string | null; content?: string | null };
-
-const demoPrograms: Program[] = [
-  { id: 'demo-anxiety', title: 'Understanding Anxiety', description: 'Learn practical ways to understand stress, recognize patterns, and build healthy coping skills.', category: 'anxiety', difficulty_level: 'beginner', estimated_duration_days: 14, total_lessons: 3 },
-  { id: 'demo-resilience', title: 'Building Resilience', description: 'Develop emotional resilience, problem-solving skills, and supportive connections.', category: 'stress', difficulty_level: 'intermediate', estimated_duration_days: 21, total_lessons: 2 },
-  { id: 'demo-mood', title: 'Overcoming Low Mood', description: 'Explore evidence-informed habits that can support mood, routines, and self-compassion.', category: 'wellbeing', difficulty_level: 'intermediate', estimated_duration_days: 28, total_lessons: 2 },
-];
+type Lesson = { id: string; lesson_number: number; title: string; description?: string | null; content_text?: string | null };
 
 export default function Programs({ onBack, onHome }: Props) {
-  const [programs, setPrograms] = useState<Program[]>(demoPrograms);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [programLoading, setProgramLoading] = useState(true);
+  const [programError, setProgramError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [progressSaving, setProgressSaving] = useState(false);
   const [selected, setSelected] = useState<Program | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [loadingLessons, setLoadingLessons] = useState(false);
 
   useEffect(() => {
-    getPrograms().then((data) => data.length && setPrograms(data)).catch(() => undefined);
+    let active = true;
+    getPrograms().then((data) => { if (active) setPrograms(data); })
+      .catch((error) => { if (active) setProgramError(error instanceof Error ? error.message : 'Unable to load programs from the database.'); })
+      .finally(() => { if (active) setProgramLoading(false); });
+    return () => { active = false; };
   }, []);
 
   async function openProgram(program: Program) {
     setSelected(program);
     setSelectedLesson(null);
+    setLessons([]);
+    setCompletedLessons(new Set());
+    setSaveError('');
     setLoadingLessons(true);
     try {
-      const data = await getLessons(program.id);
+      const [data, progress] = await Promise.all([getLessons(program.id), getProgramProgress(program.id)]);
       setLessons(data as Lesson[]);
-    } catch {
+      setCompletedLessons(new Set(progress.filter((item) => item.status === 'completed').map((item) => item.lesson_id)));
+    } catch (error) {
       setLessons([]);
+      setSaveError(error instanceof Error ? error.message : 'Unable to load lessons or saved progress.');
     } finally {
       setLoadingLessons(false);
     }
   }
 
-  function getDisplayLessons(): Lesson[] {
-    if (lessons.length) return lessons;
-    return Array.from({ length: selected?.total_lessons ?? 0 }, (_, i) => ({
-      id: `demo-${i}`,
-      lesson_number: i + 1,
-      title: `Lesson ${i + 1}`,
-      description: 'This lesson will be available when the program content is connected.',
-      content: 'Take a moment to reflect on the topic, write down one thing you learned, and choose one small action you can try today.',
-    }));
+  async function markReviewed(lesson: Lesson) {
+    if (!selected || completedLessons.has(lesson.id)) return;
+    setProgressSaving(true);
+    setSaveError('');
+    try {
+      await completeLesson(selected.id, lesson.id);
+      setCompletedLessons((current) => new Set([...current, lesson.id]));
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Could not save lesson progress.');
+    } finally {
+      setProgressSaving(false);
+    }
   }
+
+
 
   return (
     <section className="workspace-shell">
@@ -70,12 +83,12 @@ export default function Programs({ onBack, onHome }: Props) {
                 <button className="text-link" onClick={() => setSelectedLesson(null)}><T>← Back to lessons</T></button>
                 <span className="lesson-number">Lesson {selectedLesson.lesson_number}</span>
                 <h2><T>{selectedLesson.title}</T></h2>
-                <p><T>{selectedLesson.content || selectedLesson.description || 'Lesson content will appear here when connected.'}</T></p>
-                <button className="primary-action" onClick={() => setSelectedLesson(null)}><T>Mark as reviewed</T></button>
+                <p><T>{selectedLesson.content_text || selectedLesson.description || 'This lesson has no published content yet.'}</T></p>
+                <button className="primary-action" disabled={progressSaving || completedLessons.has(selectedLesson.id)} onClick={() => void markReviewed(selectedLesson)}><T>{completedLessons.has(selectedLesson.id) ? 'Completed' : progressSaving ? 'Saving…' : 'Mark as reviewed'}</T></button>{saveError && <p className="form-error"><T>{saveError}</T></p>}
               </article>
             ) : (
               <div className="lesson-list">
-                {getDisplayLessons().map((lesson) => (
+                {lessons.map((lesson) => (
                   <article className="lesson-row" key={lesson.id}>
                     <span className="lesson-number"><T>{lesson.lesson_number}</T></span>
                     <div><strong><T>{lesson.title}</T></strong><p><T>{lesson.description}</T></p></div>
@@ -84,10 +97,10 @@ export default function Programs({ onBack, onHome }: Props) {
                 ))}
               </div>
             )}
-            {loadingLessons && <p className="loading-copy"><T>Loading lessons…</T></p>}
+            {loadingLessons && <p className="loading-copy"><T>Loading lessons…</T></p>}{!loadingLessons && !lessons.length && <div className="empty-state compact"><strong><T>No published lessons</T></strong><p><T>This program has no available lessons yet.</T></p></div>}{saveError && <p className="form-error"><T>{saveError}</T></p>}
           </section>
         ) : (
-          <div className="program-grid large">
+          {programError && <p className="form-error"><T>{programError}</T></p>}{programLoading && <p className="loading-copy"><T>Loading programs…</T></p>}{!programLoading && !programError && programs.length === 0 && <div className="empty-state compact"><strong><T>No published programs</T></strong><p><T>Published self-help programs will appear here.</T></p></div>}<div className="program-grid large">
             {programs.map((program) => (
               <article className="program-card" key={program.id}>
                 <span className="program-category"><T>{program.category}</T></span>
