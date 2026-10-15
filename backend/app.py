@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import psycopg
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -13,7 +14,7 @@ from pydantic import BaseModel, Field
 from psycopg.types.json import Jsonb
 
 from .auth import current_user, hash_password, issue_session, revoke_session, verify_password
-from .db import execute, many, one
+from .db import connection, execute, many, one
 
 try:
     from openai import OpenAI
@@ -147,14 +148,44 @@ def health():
 
 @app.post("/api/auth/signup")
 def signup(p: SignupRequest):
-    email=p.email.strip().lower()
-    if one("SELECT id FROM users WHERE lower(email)=%s",(email,)): raise HTTPException(409,"An account with this email already exists")
-    u=execute("INSERT INTO users(email,password_hash,user_type,is_verified,is_active) VALUES(%s,%s,%s,FALSE,TRUE) RETURNING id,email,user_type,is_verified,is_active",(email,hash_password(p.password),p.user_type))
-    uid=str(u["id"])
-    if p.user_type=="therapist":
-        execute("INSERT INTO therapist_profiles(user_id,first_name,last_name,license_number,specializations,years_experience,bio,phone_number) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",(uid,p.first_name,p.last_name,p.license_number,[p.specialization] if p.specialization else [],p.years_experience,p.professional_bio,p.phone_number))
-    else: execute("INSERT INTO user_profiles(user_id,first_name,last_name,phone_number) VALUES(%s,%s,%s,%s)",(uid,p.first_name,p.last_name,p.phone_number))
-    return {"user":public_user(u),"token":issue_session(uid)}
+    email = p.email.strip().lower()
+    try:
+        with connection() as conn:
+            existing = conn.execute(
+                "SELECT id FROM users WHERE lower(email)=%s",
+                (email,),
+            ).fetchone()
+            if existing:
+                raise HTTPException(409, "An account with this email already exists")
+            u = conn.execute(
+                """INSERT INTO users(email,password_hash,user_type,is_verified,is_active)
+                   VALUES(%s,%s,%s,FALSE,TRUE)
+                   RETURNING id,email,user_type,is_verified,is_active""",
+                (email, hash_password(p.password), p.user_type),
+            ).fetchone()
+            uid = str(u["id"])
+            if p.user_type == "therapist":
+                conn.execute(
+                    """INSERT INTO therapist_profiles
+                       (user_id,first_name,last_name,license_number,specializations,
+                        years_experience,bio,phone_number)
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (uid, p.first_name, p.last_name, p.license_number,
+                     [p.specialization] if p.specialization else [],
+                     p.years_experience, p.professional_bio, p.phone_number),
+                )
+            else:
+                conn.execute(
+                    """INSERT INTO user_profiles(user_id,first_name,last_name,phone_number)
+                       VALUES(%s,%s,%s,%s)""",
+                    (uid, p.first_name, p.last_name, p.phone_number),
+                )
+            token = issue_session(uid, conn=conn)
+    except psycopg.errors.UniqueViolation as exc:
+        if getattr(exc.diag, "constraint_name", None) == "users_email_key":
+            raise HTTPException(409, "An account with this email already exists") from exc
+        raise
+    return {"user": public_user(u), "token": token}
 
 @app.post("/api/auth/signin")
 def signin(p: AuthRequest):
