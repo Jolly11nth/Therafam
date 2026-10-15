@@ -1,10 +1,8 @@
-import { getStoredUserId } from './therafamApi';
-
 export const apiBase = import.meta.env.VITE_API_BASE_URL ?? '';
 export const supabaseConfigured = false;
 
 async function request(path:string,init:RequestInit={}){
-  const token=localStorage.getItem('therafam:session');
+  const token=localStorage.getItem('therafam:token');
   const headers:Record<string,string>={...(init.headers as Record<string,string>|undefined)};
   if(token) headers.Authorization=`Bearer ${token}`;
   if(init.body && !(init.body instanceof FormData)) headers['Content-Type']='application/json';
@@ -17,7 +15,7 @@ async function request(path:string,init:RequestInit={}){
 class QueryBuilder<T=any>{
   private action:'select'|'insert'|'update'|'upsert'='select'; private body:any; private filters:Record<string,string>={}; private limitValue:number|undefined; private orderValue:string|undefined; private ascending=true;
   constructor(private table:string){}
-  select(_fields?:string,_opts?:any){this.action='select';return this}
+  select(_fields?:string,_opts?:any){return this}
   eq(key:string,value:any){this.filters[key]=String(value);return this}
   or(value:string){const m=value.match(/sender_id\.eq\.([^,]+),recipient_id\.eq\.([^,]+)/);if(m){this.filters.sender_id=m[1];this.filters.recipient_id=m[2]}return this}
   order(field:string,opts?:{ascending?:boolean}){this.orderValue=field;this.ascending=opts?.ascending??true;return this}
@@ -29,7 +27,6 @@ class QueryBuilder<T=any>{
   maybeSingle(){return this.execute(true)}
   then(resolve:any,reject?:any){return this.execute(false).then(resolve,reject)}
   async execute(single:boolean){
-    const uid=getStoredUserId();
     if(this.table==='therapist_profiles'){
       if(this.action==='select'){
         const r=await request('/api/therapist/profile');const p=r.data?.profile;return {data:single?(p??null):[p].filter(Boolean),error:r.error,count:null};
@@ -58,7 +55,7 @@ class QueryBuilder<T=any>{
 
 export const supabase={
   from:(table:string)=>new QueryBuilder(table),
-  auth:{signOut:async()=>{const result=await request('/api/auth/signout',{method:'POST'});localStorage.removeItem('therafam:session');localStorage.removeItem('therafam:userId');return {error:result.error}}},
+  auth:{signOut:async()=>{const result=await request('/api/auth/signout',{method:'POST'});localStorage.removeItem('therafam:token');localStorage.removeItem('therafam:userId');return {error:result.error}}},
 };
 
 export async function callBackend(path:string,init:RequestInit={}){const r=await request(path,init);if(r.error)throw new Error(r.error.message);return new Response(JSON.stringify(r.data),{status:200,headers:{'Content-Type':'application/json'}})}
