@@ -26,43 +26,11 @@ def main() -> None:
         raise SystemExit("DATABASE_URL is required")
 
     with psycopg.connect(url) as conn:
-        exists = conn.execute(
-            "SELECT to_regclass('public.users') AS users_table"
-        ).fetchone()[0]
-        if not exists:
-            existing_tables = conn.execute(
-                "SELECT COUNT(*) FROM pg_tables "
-                "WHERE schemaname = 'public' AND tablename NOT LIKE 'pg_%'"
-            ).fetchone()[0]
-            if existing_tables:
-                raise SystemExit(
-                    "Refusing to initialize schema: public tables already exist but "
-                    "public.users is missing. Inspect the database before proceeding."
-                )
-            run(conn, SCHEMA)
-        else:
-            required_base_tables = [
-                "users", "email_verifications", "user_profiles", "therapist_profiles",
-                "user_settings", "therapist_availability", "therapist_client_relationships",
-                "therapy_sessions", "therapy_session_notes", "therapy_notes", "chat_messages",
-                "ai_conversations", "crisis_logs", "ai_interactions", "documents",
-                "mood_entries", "self_help_programs", "lessons", "lesson_progress",
-                "notifications", "revenue_transactions", "therapist_handoffs",
-            ]
-            existing_base_tables = {
-                row[0] for row in conn.execute(
-                    "SELECT tablename FROM pg_tables "
-                    "WHERE schemaname = 'public' AND tablename = ANY(%s)",
-                    (required_base_tables,),
-                ).fetchall()
-            }
-            missing_base_tables = sorted(set(required_base_tables) - existing_base_tables)
-            if missing_base_tables:
-                raise SystemExit(
-                    "Refusing to apply supplemental migrations to a partial Therafam schema. "
-                    "Missing base tables: " + ", ".join(missing_base_tables) +
-                    ". Back up and inspect this database before repairing its schema."
-                )
+        # The base SQL schema is idempotent: CREATE TABLE/INDEX IF NOT EXISTS,
+        # CREATE OR REPLACE views/functions, replaceable triggers, and idempotent seeds.
+        # Reapplying it safely repairs a partially initialized database without dropping
+        # tables or rows. Do not skip it merely because public.users already exists.
+        run(conn, SCHEMA)
         run(conn, SUBS)
         run(conn, AUTH)
         run(conn, REVIEWS)
