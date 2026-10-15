@@ -517,8 +517,13 @@ def subscription(user=Depends(current_user)):
     return {"subscription":clean(s),"features_locked":not active,"trial_days_remaining":int(rem) if rem is not None else None}
 @app.post("/api/subscription/upgrade")
 def upgrade(p:SubscriptionUpgrade,user=Depends(current_user)):
-    if user["user_type"]!="client": raise HTTPException(403,"Only client accounts can manage subscriptions")
-    r=execute("UPDATE user_subscriptions SET plan=%s,status='active',subscription_started_at=NOW(),updated_at=NOW() WHERE user_id=%s RETURNING *",(p.plan,user["id"])); return {"activated":True,"plan":p.plan,"payment_required":False,"record":clean(r)}
+    if user["user_type"]!="client":
+        raise HTTPException(403,"Only client accounts can manage subscriptions")
+    # Never grant paid access without a verified payment-provider callback.
+    raise HTTPException(
+        503,
+        "Subscription payments are not configured. No subscription change was made.",
+    )
 @app.get("/api/therapist/earnings")
 def earnings(user=Depends(current_user)):
     therapist(user); rows=many("SELECT * FROM therapist_earnings WHERE therapist_id=%s ORDER BY created_at DESC LIMIT 100",(user["id"],)); available=sum(float(r["amount"] or 0) for r in rows if r["status"]=="available" and r["earning_type"]!="withdrawal"); pending=sum(float(r["amount"] or 0) for r in rows if r["status"]=="pending" and r["earning_type"]!="withdrawal"); withdrawn=sum(float(r["amount"] or 0) for r in rows if r["earning_type"]=="withdrawal" and r["status"]=="paid_out"); perf=one("SELECT * FROM therapist_performance WHERE therapist_id=%s ORDER BY period_end DESC LIMIT 1",(user["id"],)); return {"available_balance":round(available,2),"pending_balance":round(pending,2),"total_earned":round(available+pending+withdrawn,2),"total_withdrawn":round(withdrawn,2),"performance":clean(perf),"transactions":[clean(r) for r in rows]}
