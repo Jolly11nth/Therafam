@@ -130,19 +130,27 @@ def health():
             (required_tables,),
         )}
         missing = [table for table in required_tables if table not in existing]
-        vector = bool(one("SELECT 1 FROM pg_extension WHERE extname='vector'"))
+        required_extensions = ["uuid-ossp", "pgcrypto", "vector"]
+        installed_extensions = {row["extname"] for row in many(
+            "SELECT extname FROM pg_extension WHERE extname = ANY(%s)",
+            (required_extensions,),
+        )}
+        missing_extensions = [ext for ext in required_extensions if ext not in installed_extensions]
+        vector = "vector" in installed_extensions
         db = True
     except Exception:
         db = False
         missing = required_tables
+        missing_extensions = ["uuid-ossp", "pgcrypto", "vector"]
         vector = False
-    ready = db and not missing
+    ready = db and not missing and not missing_extensions
     return {
-        "status": "ok" if ready and vector else "degraded" if db else "unavailable",
+        "status": "ok" if ready else "degraded" if db else "unavailable",
         "service": "therafam-api",
         "database_configured": db,
         "schema_ready": ready,
         "missing_tables": missing,
+        "missing_extensions": missing_extensions,
         "vector_extension": vector,
     }
 
