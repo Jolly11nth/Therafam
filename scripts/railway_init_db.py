@@ -40,6 +40,29 @@ def main() -> None:
                     "public.users is missing. Inspect the database before proceeding."
                 )
             run(conn, SCHEMA)
+        else:
+            required_base_tables = [
+                "users", "email_verifications", "user_profiles", "therapist_profiles",
+                "user_settings", "therapist_availability", "therapist_client_relationships",
+                "therapy_sessions", "therapy_session_notes", "therapy_notes", "chat_messages",
+                "ai_conversations", "crisis_logs", "ai_interactions", "documents",
+                "mood_entries", "self_help_programs", "lessons", "lesson_progress",
+                "notifications", "revenue_transactions", "therapist_handoffs",
+            ]
+            existing_base_tables = {
+                row[0] for row in conn.execute(
+                    "SELECT tablename FROM pg_tables "
+                    "WHERE schemaname = 'public' AND tablename = ANY(%s)",
+                    (required_base_tables,),
+                ).fetchall()
+            }
+            missing_base_tables = sorted(set(required_base_tables) - existing_base_tables)
+            if missing_base_tables:
+                raise SystemExit(
+                    "Refusing to apply supplemental migrations to a partial Therafam schema. "
+                    "Missing base tables: " + ", ".join(missing_base_tables) +
+                    ". Back up and inspect this database before repairing its schema."
+                )
         run(conn, SUBS)
         run(conn, AUTH)
         run(conn, REVIEWS)
