@@ -101,7 +101,7 @@ export default function Programs({ onBack, onHome }: Props) {
           </section>
         ) : (
           <>
-          {programError && <p className="form-error"><T>{programError}</T></p>{programLoading && <p className="loading-copy"><T>Loading programs…</T></p>}{!programLoading && !programError && programs.length === 0 && <div className="empty-state compact"><strong><T>No published programs</T></strong><p><T>Published self-help programs will appear here.</T></p></div>}<div className="program-grid large">
+          {programError && <p className="form-error"><T>{programError}</T></p>}{programLoading && <p className="loading-copy"><T>Loading programs…</T></p>}{!programLoading && !programError && programs.length === 0 && <div className="empty-state compact"><strong><T>No published programs</T></strong><p><T>Published self-help programs will appear here.</T></p></div>}<div className="program-grid large">
             {programs.map((program) => (
               <article className="program-card" key={program.id}>
                 <span className="program-category"><T>{program.category}</T></span>
