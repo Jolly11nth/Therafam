@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Brand from '../components/Brand';
 import { getSettings, getStoredUserId, getUserProfile, saveSettings, saveUserProfile, uploadProfileImage, type AppSettings, type UserProfile } from '../lib/therafamApi';
 import { applyTheme, getLanguage, getTheme, setLanguage, type Language, type Theme } from '../lib/preferences';
-import { supabase } from '../lib/supabase';
+import { signOutAccount } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void; onLogout: () => void };
 
@@ -90,7 +90,7 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
     if (!window.confirm('Log out of Therafam?')) return;
     setLoggingOut(true);
     try {
-      if (supabase) await supabase.auth.signOut();
+      if (userId) await signOutAccount(userId);
     } catch {
       // Clear the local session even when the remote sign-out is unavailable.
     } finally {
