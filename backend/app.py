@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import psycopg
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -78,6 +78,11 @@ class TherapistProfileUpdate(BaseModel):
     bio: str | None = Field(default=None, max_length=500); phone_number: str | None = Field(default=None, max_length=20)
     timezone: str = Field(default="Africa/Lagos", max_length=50); languages_spoken: list[str] = Field(default_factory=list)
 class AvailabilityUpdate(BaseModel): is_accepting_clients: bool
+class AvailabilitySlotInput(BaseModel):
+    day_of_week: int = Field(ge=0, le=6)
+    start_time: time
+    end_time: time
+    timezone: str = Field(default="Africa/Lagos", max_length=50)
 class SupportRequest(BaseModel):
     category: Literal["contact", "report"]; message: str = Field(min_length=5, max_length=4000)
 class SessionCreate(BaseModel):
@@ -364,6 +369,56 @@ def therapist_profile(user=Depends(current_user)): therapist(user); return {"pro
 def save_therapist(p:TherapistProfileUpdate,user=Depends(current_user)):
     therapist(user); d=p.model_dump(); r=execute("""INSERT INTO therapist_profiles(user_id,first_name,last_name,professional_title,license_number,license_state,specializations,years_experience,bio,phone_number,timezone,languages_spoken) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(user_id) DO UPDATE SET first_name=EXCLUDED.first_name,last_name=EXCLUDED.last_name,professional_title=EXCLUDED.professional_title,license_number=EXCLUDED.license_number,license_state=EXCLUDED.license_state,specializations=EXCLUDED.specializations,years_experience=EXCLUDED.years_experience,bio=EXCLUDED.bio,phone_number=EXCLUDED.phone_number,timezone=EXCLUDED.timezone,languages_spoken=EXCLUDED.languages_spoken,updated_at=NOW() RETURNING *""",(user["id"],d["first_name"],d["last_name"],d["professional_title"],d["license_number"],d["license_state"],d["specializations"],d["years_experience"],d["bio"],d["phone_number"],d["timezone"],d["languages_spoken"]))
     return {"profile":clean(r)}
+@app.get("/api/therapist/availability/slots")
+def therapist_availability_slots(user=Depends(current_user)):
+    therapist(user)
+    rows = many(
+        """SELECT id,therapist_id,day_of_week,start_time,end_time,is_available,timezone,created_at,updated_at
+           FROM therapist_availability
+           WHERE therapist_id=%s
+           ORDER BY day_of_week,start_time""",
+        (user["id"],),
+    )
+    return {"slots": [clean(row) for row in rows]}
+
+@app.post("/api/therapist/availability/slots")
+def create_therapist_availability_slot(payload: AvailabilitySlotInput, user=Depends(current_user)):
+    therapist(user)
+    if payload.end_time <= payload.start_time:
+        raise HTTPException(400, "Availability end time must be after start time")
+    try:
+        with connection() as conn:
+            overlap = conn.execute(
+                """SELECT id FROM therapist_availability
+                   WHERE therapist_id=%s AND day_of_week=%s AND is_available=TRUE
+                     AND start_time < %s AND end_time > %s
+                   LIMIT 1""",
+                (user["id"], payload.day_of_week, payload.end_time, payload.start_time),
+            ).fetchone()
+            if overlap:
+                raise HTTPException(409, "This availability overlaps an existing time block")
+            row = conn.execute(
+                """INSERT INTO therapist_availability
+                   (therapist_id,day_of_week,start_time,end_time,is_available,timezone)
+                   VALUES(%s,%s,%s,%s,TRUE,%s)
+                   RETURNING id,therapist_id,day_of_week,start_time,end_time,is_available,timezone,created_at,updated_at""",
+                (user["id"], payload.day_of_week, payload.start_time, payload.end_time, payload.timezone),
+            ).fetchone()
+    except psycopg.errors.UniqueViolation as exc:
+        raise HTTPException(409, "A schedule block already exists at that start time") from exc
+    return {"slot": clean(row), "saved": True}
+
+@app.delete("/api/therapist/availability/slots/{slot_id}")
+def delete_therapist_availability_slot(slot_id: str, user=Depends(current_user)):
+    therapist(user)
+    row = execute(
+        "DELETE FROM therapist_availability WHERE id=%s AND therapist_id=%s RETURNING id",
+        (slot_id, user["id"]),
+    )
+    if not row:
+        raise HTTPException(404, "Availability slot not found")
+    return {"deleted": True, "id": str(row["id"])}
+
 @app.put("/api/therapist/availability")
 def availability(p:AvailabilityUpdate,user=Depends(current_user)):
     therapist(user); r=execute("UPDATE therapist_profiles SET is_accepting_clients=%s,updated_at=NOW() WHERE user_id=%s RETURNING *",(p.is_accepting_clients,user["id"]))
