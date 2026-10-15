@@ -27,15 +27,24 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
   const [saved, setSaved] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState('');
+  const [settingsError, setSettingsError] = useState('');
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!userId) return;
+    let active = true;
+    setSettingsLoading(true);
+    setSettingsError('');
     Promise.all([getSettings(userId), getUserProfile(userId)]).then(([data, profileData]) => {
+      if (!active) return;
       if (data) { setSettings(data); applyTheme(data.theme as Theme); setLanguage(data.language as Language); }
       if (profileData) setProfile({ ...profileDefaults, ...profileData });
-    }).catch(() => undefined);
+    }).catch((error) => {
+      if (active) setSettingsError(error instanceof Error ? error.message : 'Could not load settings from your account.');
+    }).finally(() => { if (active) setSettingsLoading(false); });
+    return () => { active = false; };
   }, [userId]);
 
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
@@ -49,9 +58,13 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
   }
 
   async function save() {
-    if (!userId) { setSaved(true); return; }
+    if (!userId) { setSettingsError('Sign in to save settings to PostgreSQL.'); setSaved(false); return; }
     setSaving(true);
-    try { await saveSettings(settings); setSaved(true); } finally { setSaving(false); }
+    setSettingsError('');
+    setSaved(false);
+    try { await saveSettings(settings); setSaved(true); }
+    catch (error) { setSettingsError(error instanceof Error ? error.message : 'Could not save settings to your account.'); }
+    finally { setSaving(false); }
   }
 
   async function saveProfile() {
@@ -81,7 +94,8 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
     } catch {
       // Clear the local session even when the remote sign-out is unavailable.
     } finally {
-      localStorage.removeItem('therafam:session');
+      localStorage.removeItem('therafam:token');
+      localStorage.removeItem('therafam:app-session');
       localStorage.removeItem('therafam:userId');
       onLogout();
     }
@@ -91,6 +105,8 @@ export default function Settings({ onBack, onHome, onLogout }: Props) {
     <section className="workspace-shell">
       <header className="workspace-topbar"><button className="workspace-brand" onClick={onHome}><Brand compact /></button><div className="workspace-top-actions"><button className="theme-button" onClick={() => update('theme', settings.theme === 'dark' ? 'light' : 'dark')}><T>{settings.theme === 'dark' ? '☀ Dark' : '☾ Light'}</T></button><button className="text-link" onClick={onBack}><T>Back to dashboard</T></button></div></header>
       <div className="workspace-content narrow-content">
+        {settingsLoading && <p className="loading-copy"><T>Loading account settings…</T></p>}
+        {settingsError && <div className="form-error" role="alert"><T>{settingsError}</T></div>
         <div className="workspace-heading"><div><span className="eyebrow"><T>Your account</T></span><h1><T>Settings</T></h1><p><T>Manage your profile, preferences, privacy, and Therafam experience.</T></p></div></div>
 
         <section className="settings-card profile-settings-card">
