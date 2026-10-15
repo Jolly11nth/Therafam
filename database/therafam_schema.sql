@@ -336,7 +336,7 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 
 -- Add index for fast similarity search
-CREATE INDEX IF NOT EXISTS ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS documents_embedding_idx ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 -- =============================================================================
 -- MOOD TRACKING SYSTEM
