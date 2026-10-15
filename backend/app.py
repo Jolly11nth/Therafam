@@ -185,13 +185,17 @@ def chat(p: ChatRequest, user=Depends(current_user)):
     except Exception as exc:
         # Avoid leaking database/provider details to the client.
         raise HTTPException(502, "Therafam AI is temporarily unavailable") from exc
+    history_saved = False
     try:
         execute(
             "INSERT INTO ai_interactions(user_id,input_text,response_text,emotions,escalation_level) VALUES(%s,%s,%s,%s,%s)",
             (user["id"], p.message, result["response"], [], 1 if result.get("crisis") else 0),
         )
+        history_saved = True
     except Exception:
-        pass
+        # Preserve the AI response but tell the client that persistence failed.
+        history_saved = False
+    result["history_saved"] = history_saved
     return result
 
 @app.get("/api/chat/history")
