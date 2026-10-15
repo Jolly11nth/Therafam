@@ -98,7 +98,7 @@ export default function Messages({ onBack, onHome, onFindTherapists }: Props) {
           <div className="message-list" aria-live="polite">
             {loadingContacts || loadingMessages ? <div className="empty-state"><strong><T>Loading messages…</T></strong></div>
               : contacts.length === 0 ? <div className="empty-state"><span>♡</span><strong><T>No active care-team contact yet</T></strong><p><T>After you connect with a therapist through a booking, that person will appear here.</T></p><button className="primary-action" onClick={onFindTherapists}><T>Find a therapist</T></button></div>
-              : messages.length ? messages.map((message) => <div key={message.id} className={`message-item ${message.sender_id === userId ? 'mine' : ''}`}><span><T>{message.message_text}</T></span><small><T>{new Date(message.created_at).toLocaleString()}</T></small></div>
+              : messages.length ? messages.map((message) => <div key={message.id} className={`message-item ${message.sender_id === userId ? 'mine' : ''}`}><span><T>{message.message_text}</T></span><small><T>{new Date(message.created_at).toLocaleString()}</T></small></div>)
               : <div className="empty-state"><span>♡</span><strong><T>No messages yet</T></strong><p><T>Start a conversation with</T> {selectedContact ? contactName(selectedContact) : <T>your care team</T>}.</p></div>}
           </div>
           {error && <div className="form-error"><T>{error}</T></div>}
