@@ -15,6 +15,7 @@ from psycopg.types.json import Jsonb
 
 from .auth import current_user, hash_password, issue_session, revoke_session, verify_password
 from .db import connection, execute, many, one
+from .self_help_resources import router as self_help_resources_router
 
 try:
     from openai import OpenAI
@@ -607,6 +608,8 @@ def performance(user=Depends(current_user)): therapist(user); return {"performan
 def crisis(payload:dict[str,Any]): return {"flagged":False,"level":"none"}
 @app.post("/api/emotion-detection")
 def emotion(payload:dict[str,Any]): return {"emotions":[],"confidence":0.0,"status":"not_configured"}
+
+app.include_router(self_help_resources_router)
 
 DIST=Path(__file__).resolve().parents[1]/"dist"
 if (DIST/"assets").exists(): app.mount("/assets",StaticFiles(directory=DIST/"assets"),name="assets")
