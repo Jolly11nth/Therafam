@@ -16,7 +16,7 @@ export async function signOut(){try{await api('/api/auth/signout',{method:'POST'
 export async function signIn(email:string,password:string){const r=await api<{user:{id:string};token:string}>('/api/auth/signin',{method:'POST',body:JSON.stringify({email,password})});setSession(r.token,r.user.id);return r}
 export async function signUp(payload:Record<string,unknown>){const r=await api<{user:{id:string};token:string}>('/api/auth/signup',{method:'POST',body:JSON.stringify(payload)});setSession(r.token,r.user.id);return r}
 export type DatabaseHealth={status:string;service?:string;database_configured?:boolean;schema_ready?:boolean;missing_tables?:string[];missing_columns?:string[];missing_extensions?:string[];vector_extension?:boolean};
-export async function getHealth(){return api<DatabaseHealth>('/api/health',{headers:{}})}
+export async function getHealth(){const response=await fetch(`${API_BASE}/api/health`);const data=await response.json().catch(()=>null);if(!data)throw new Error(`Health check failed with HTTP ${response.status}`);return data as DatabaseHealth}
 export async function sendAiMessage(message:string,history:ChatMessage[]=[],userId?:string){return api<{response:string;conversation_id?:string;crisis?:boolean;demo?:boolean;history_saved?:boolean;history_disabled?:boolean}>('/api/chat',{method:'POST',body:JSON.stringify({message,history,language:getLanguage()})},userId||getStoredUserId())}
 export type AiInteraction={id:string;input_text:string;response_text:string;created_at:string};
 export async function getAiChatHistory(userId:string=getStoredUserId()){return (await api<{interactions:AiInteraction[]}>('/api/chat/history?limit=50',{},userId)).interactions}
