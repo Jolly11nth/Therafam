@@ -45,7 +45,8 @@ export default function AIChat({ onBack, onHome }: Props) {
     try {
       const result = await sendAiMessage(message, messages, userId);
       setMessages((current) => [...current, { role: 'assistant', content: result.response }]);
-      if (result.history_saved === false) setHistoryNotice('Your reply was generated, but this exchange could not be saved to your account.');
+      if (result.history_disabled) setHistoryNotice('Your preference keeps AI conversations out of saved history.');
+      else if (result.history_saved === false) setHistoryNotice('Your reply was generated, but this exchange could not be saved to your account.');
       else setHistoryNotice('');
     } catch {
       setError('The AI service could not be reached. Your conversation is still visible here; try again when the backend is available.');
