@@ -1,6 +1,6 @@
 # Therafam
 
-Therafam combines a deployable mental-health frontend with the existing Python/Supabase backend utilities in this repository.
+Therafam is a React/Vite frontend served by a FastAPI backend. The Railway deployment uses a single web service and Railway PostgreSQL for accounts, profiles, mood history, programs, bookings, care-team messages, settings, subscriptions, and AI conversation history. Legacy Supabase utilities are retained in the repository but are not the database connection used by the Railway application.
 
 ## Frontend quick start
 
@@ -31,15 +31,13 @@ The production build is emitted to `dist/` by Vite. `dist/` is intentionally ign
 
 ### Frontend environment variables
 
-Only expose public frontend values with the `VITE_` prefix:
+Frontend variables:
 
-```bash
-VITE_API_BASE_URL=http://localhost:8000
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-public-anon-key
-```
+- **Combined Railway Docker deployment:** leave `VITE_API_BASE_URL` unset or empty. The frontend then sends `/api/...` requests to the same origin that serves the site and FastAPI backend.
+- **Local development with Vite on port 5173 and FastAPI on port 8000:** set `VITE_API_BASE_URL=http://localhost:8000` in the frontend build environment.
+- **A separately hosted static frontend:** set `VITE_API_BASE_URL` to the public HTTPS origin of the FastAPI service.
 
-Do not place server secrets such as Supabase service-role keys, OpenAI API keys, Redis credentials, or database passwords in frontend environment variables.
+Do not set `VITE_API_BASE_URL` to `localhost` in a production frontend. A visitor's browser would try to call their own computer instead of Railway. Do not place server secrets, `DATABASE_URL`, OpenAI keys, storage credentials, or service-role keys in any `VITE_` variable.
 
 ## Static frontend deployment
 
@@ -53,15 +51,15 @@ Use these settings on Vercel, Netlify, Cloudflare Pages, Railway static hosting,
 
 ## Backend quick start
 
-The Python backend remains at the repository root.
+The Railway backend entrypoint is `backend.bootstrap:app` (configured in the Dockerfile). `main.py` is a legacy entrypoint; for local testing of the Railway API, run `uvicorn backend.bootstrap:app --host 0.0.0.0 --port 8000`.
 
 ### Requirements
 
 - Python 3.10 or newer
 - pip
-- Supabase account
-- OpenAI API key
-- Redis instance, optional for production features
+- PostgreSQL database URL
+- OpenAI API key for AI chat
+- S3-compatible storage credentials only if profile image uploads are needed
 
 ### Run locally
 
@@ -69,7 +67,8 @@ The Python backend remains at the repository root.
 python -m venv venv
 source venv/bin/activate # Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
-python main.py
+export DATABASE_URL='postgresql://...'
+uvicorn backend.bootstrap:app --host 0.0.0.0 --port 8000
 ```
 
 The API is available at `http://localhost:8000`.
@@ -78,23 +77,31 @@ The API is available at `http://localhost:8000`.
 
 | Variable | Description | Required | Default |
 | --- | --- | --- | --- |
-| `PORT` | Server port | No | `8000` |
-| `ENV` | Environment | No | `development` |
-| `LOG_LEVEL` | Log level | No | `INFO` |
-| `SUPABASE_URL` | Supabase project URL | Yes | - |
-| `SUPABASE_KEY` | Supabase service-role key | Yes | - |
-| `OPENAI_API_KEY` | OpenAI API key | Yes | - |
-| `REDIS_HOST` | Redis host URL | Optional | - |
-| `REDIS_PORT` | Redis port | Optional | `6379` |
-| `REDIS_PASSWORD` | Redis password | Optional | - |
+| `DATABASE_URL` | Railway PostgreSQL connection string | Yes | - |
+| `PORT` | Port supplied by Railway | No | `8000` |
+| `OPENAI_API_KEY` | Server-side OpenAI key for AI chat and embeddings | Required for AI chat | - |
+| `OPENAI_CHAT_MODEL` | OpenAI chat model | No | `gpt-4o-mini` |
+| `OPENAI_EMBEDDING_MODEL` | OpenAI embedding model | No | `text-embedding-3-small` |
+| `BUCKET` / `AWS_S3_BUCKET_NAME` | Profile-image bucket name | Required for image uploads | - |
+| `ENDPOINT` / `AWS_ENDPOINT_URL` | S3-compatible storage endpoint | Required for image uploads | - |
+| `ACCESS_KEY_ID` / `AWS_ACCESS_KEY_ID` | Storage access key ID | Required for image uploads | - |
+| `SECRET_ACCESS_KEY` / `AWS_SECRET_ACCESS_KEY` | Storage secret key | Required for image uploads | - |
+| `REGION` | Storage region | No | `auto` |
+
+The Railway web service must reference the PostgreSQL service's `DATABASE_URL` using Railway's variable-reference syntax, e.g. `${{Postgres.DATABASE_URL}}` (replace `Postgres` with the actual service name). Keep credentials only in Railway Variables.
 
 ## Core backend endpoints
 
-- `GET /api/health` - health check
-- `POST /api/chat` - AI therapeutic conversation endpoint
-- `POST /api/crisis-check` - crisis detection endpoint
-- `POST /api/emotion-detection` - emotion detection endpoint
-- `GET /api/mood-context/{user_id}` - mood context endpoint
+- `GET /api/health` — read-only connection, required-table, and extension check; inspect `schema_ready`, `missing_tables`, and `missing_extensions`.
+- `POST /api/auth/signup`, `POST /api/auth/signin`, `POST /api/auth/signout` — account and session handling.
+- `GET/PUT /api/profile`, `GET/PUT /api/settings` — account profile and preferences.
+- `GET/POST /api/mood` — saved mood check-ins.
+- `GET /api/programs`, `GET /api/programs/{id}/lessons`, and the progress endpoints — published learning content and account progress.
+- `POST /api/chat`, `GET /api/chat/history` — AI responses and saved interaction history.
+- `/api/therapists...`, `/api/bookings`, `/api/my/bookings` — therapist discovery, reviews, availability, and booking.
+- `/api/messages...` — authenticated messages restricted to active care-team relationships.
+- `/api/therapist/...` — therapist profile, availability, sessions, notes, messages, earnings, and performance.
+- `POST /api/support` — persist a support request as a notification for the signed-in account.
 
 ## Railway-native AI (PDF RAG)
 
@@ -115,6 +122,22 @@ Set these on the **backend/web service** in Railway:
 | `RAG_CHUNK_WORDS` | No | Defaults to 220 words per chunk. |
 | `RAG_CHUNK_OVERLAP` | No | Defaults to 40 words overlap. |
 
-The PostgreSQL instance must support `CREATE EXTENSION vector`. Run `database/railway_rag_migration.sql` against the Railway database if you prefer applying the schema before first use; the service also creates the required table at runtime. Keep `DATABASE_URL` and `OPENAI_API_KEY` private in Railway Variables. Do not commit actual secrets to GitHub.
+The PostgreSQL instance must support `uuid-ossp`, `pgcrypto`, and `vector`. Railway's `preDeployCommand` runs `scripts/railway_init_db.py`; that initializer creates the base schema only when the application schema is empty, checks for a partial base schema, and then applies the repeatable supplemental migrations. Do not manually run `database/therafam_schema.sql` on a database that already contains data. The API's `/api/health` response reports missing tables and extensions so you can verify schema readiness. Keep `DATABASE_URL` and `OPENAI_API_KEY` private in Railway Variables. Do not commit actual secrets to GitHub.
 
 The RAG flow JSON is treated as a design reference, not an executable Langflow server. Its current nodes describe Redis memory, a CBT prompt, OpenAI chat, satisfaction detection, and a Supabase write; they do not define a complete PDF retrieval chain. This implementation adds retrieval from the repository's CBT guide and stores vectors in Railway PostgreSQL instead of Supabase.
+
+
+## Verifying the Railway database connection
+
+After a deployment, open the public `/api/health` URL for the application service. A response with `"database_configured": true`, `"schema_ready": true`, an empty `"missing_tables"` array, an empty `"missing_extensions"` array, and `"vector_extension": true` indicates the required PostgreSQL schema and extensions were detected. The health endpoint is diagnostic; it does not prove that every external service (such as OpenAI or profile-image storage) is configured.
+
+For account checks, use the Railway PostgreSQL SQL editor against the same PostgreSQL service referenced by the web service's `DATABASE_URL`. For example, to look for an account without selecting password hashes:
+
+```sql
+SELECT id, email, user_type, is_verified, is_active, created_at
+FROM public.users
+WHERE lower(email) = lower('account@example.com')
+LIMIT 1;
+```
+
+The combined Railway deployment uses same-origin API requests when `VITE_API_BASE_URL` is unset. If the frontend is built with a stale or incorrect `VITE_API_BASE_URL`, account requests may go to a different service/database.

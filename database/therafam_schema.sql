@@ -8,41 +8,13 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- =============================================================================
--- CLEANUP (for development - remove in production)
--- =============================================================================
+-- Production-safe schema: create missing tables only; never drop existing data.
 
--- Drop functions first
-DROP FUNCTION IF EXISTS match_documents(vector, int);
-DROP FUNCTION IF EXISTS get_user_mood_trend(uuid, int);
-DROP FUNCTION IF EXISTS get_therapist_stats(uuid);
-
--- Drop tables in correct order (reverse of creation due to foreign keys)
-DROP TABLE IF EXISTS ai_conversations CASCADE;
-DROP TABLE IF EXISTS therapy_session_notes CASCADE;
-DROP TABLE IF EXISTS therapy_sessions CASCADE;
-DROP TABLE IF EXISTS mood_entries CASCADE;
-DROP TABLE IF EXISTS lesson_progress CASCADE;
-DROP TABLE IF EXISTS lessons CASCADE;
-DROP TABLE IF EXISTS self_help_programs CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS chat_messages CASCADE;
-DROP TABLE IF EXISTS therapist_client_relationships CASCADE;
-DROP TABLE IF EXISTS therapist_availability CASCADE;
-DROP TABLE IF EXISTS revenue_transactions CASCADE;
-DROP TABLE IF EXISTS user_settings CASCADE;
-DROP TABLE IF EXISTS therapist_profiles CASCADE;
-DROP TABLE IF EXISTS user_profiles CASCADE;
-DROP TABLE IF EXISTS email_verifications CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS therapy_notes CASCADE;
-DROP TABLE IF EXISTS documents CASCADE;
-
--- =============================================================================
 -- CORE USER TABLES
 -- =============================================================================
 
 -- Users table (both clients and therapists)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -61,7 +33,7 @@ CREATE TABLE users (
 );
 
 -- Email verification tracking
-CREATE TABLE email_verifications (
+CREATE TABLE IF NOT EXISTS email_verifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     verification_code VARCHAR(10) NOT NULL,
@@ -72,7 +44,7 @@ CREATE TABLE email_verifications (
 );
 
 -- User profiles (clients)
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     first_name VARCHAR(100),
@@ -103,12 +75,13 @@ CREATE TABLE user_profiles (
 );
 
 -- Therapist profiles
-CREATE TABLE therapist_profiles (
+CREATE TABLE IF NOT EXISTS therapist_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     license_number VARCHAR(50) UNIQUE,
+    professional_title VARCHAR(120),
     license_state VARCHAR(50),
     license_expiry_date DATE,
     specializations TEXT[],
@@ -140,7 +113,7 @@ CREATE TABLE therapist_profiles (
 );
 
 -- User settings and preferences
-CREATE TABLE user_settings (
+CREATE TABLE IF NOT EXISTS user_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     -- Notification preferences
@@ -166,7 +139,7 @@ CREATE TABLE user_settings (
 -- =============================================================================
 
 -- Therapist availability schedules
-CREATE TABLE therapist_availability (
+CREATE TABLE IF NOT EXISTS therapist_availability (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     therapist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0 = Sunday
@@ -180,7 +153,7 @@ CREATE TABLE therapist_availability (
 );
 
 -- Client-therapist relationships
-CREATE TABLE therapist_client_relationships (
+CREATE TABLE IF NOT EXISTS therapist_client_relationships (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     therapist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -203,7 +176,7 @@ CREATE TABLE therapist_client_relationships (
 -- =============================================================================
 
 -- Therapy sessions/appointments
-CREATE TABLE therapy_sessions (
+CREATE TABLE IF NOT EXISTS therapy_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     therapist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -231,7 +204,7 @@ CREATE TABLE therapy_sessions (
 );
 
 -- Session notes and outcomes
-CREATE TABLE therapy_session_notes (
+CREATE TABLE IF NOT EXISTS therapy_session_notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     session_id UUID NOT NULL REFERENCES therapy_sessions(id) ON DELETE CASCADE,
     therapist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -256,7 +229,7 @@ CREATE TABLE therapy_session_notes (
 );
 
 -- Legacy therapy notes (from your original schema)
-CREATE TABLE therapy_notes (
+CREATE TABLE IF NOT EXISTS therapy_notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     note TEXT NOT NULL,
@@ -268,7 +241,7 @@ CREATE TABLE therapy_notes (
 -- =============================================================================
 
 -- Chat messages (both AI and human therapist conversations)
-CREATE TABLE chat_messages (
+CREATE TABLE IF NOT EXISTS chat_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     conversation_type VARCHAR(20) NOT NULL CHECK (conversation_type IN ('ai_chat', 'therapist_chat', 'group_chat')),
     sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -294,7 +267,7 @@ CREATE TABLE chat_messages (
 );
 
 -- AI conversation tracking
-CREATE TABLE ai_conversations (
+CREATE TABLE IF NOT EXISTS ai_conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     conversation_title VARCHAR(200),
@@ -315,7 +288,7 @@ CREATE TABLE ai_conversations (
 -- CRISIS LOGS (AI SAFETY + COMPLIANCE)
 -- =============================================================================
 
-CREATE TABLE crisis_logs (
+CREATE TABLE IF NOT EXISTS crisis_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     input_text TEXT,
@@ -323,14 +296,14 @@ CREATE TABLE crisis_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_crisis_logs_user_id ON crisis_logs(user_id);
-CREATE INDEX idx_crisis_logs_created_at ON crisis_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_crisis_logs_user_id ON crisis_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_crisis_logs_created_at ON crisis_logs(created_at);
 
 -- =============================================================================
 -- AI INTERACTION AUDIT LOG
 -- =============================================================================
 
-CREATE TABLE ai_interactions (
+CREATE TABLE IF NOT EXISTS ai_interactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     input_text TEXT,
@@ -340,15 +313,15 @@ CREATE TABLE ai_interactions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_ai_interactions_user_id ON ai_interactions(user_id);
-CREATE INDEX idx_ai_interactions_created_at ON ai_interactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_interactions_user_id ON ai_interactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_ai_interactions_created_at ON ai_interactions(created_at);
 
 -- =============================================================================
 -- AI AND VECTOR SEARCH (from your original schema)
 -- =============================================================================
 
 -- Documents table with UUID ID for vector search
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     content TEXT NOT NULL,
     metadata JSONB DEFAULT '{}'::jsonb,
@@ -363,14 +336,14 @@ CREATE TABLE documents (
 );
 
 -- Add index for fast similarity search
-CREATE INDEX ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS documents_embedding_idx ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 -- =============================================================================
 -- MOOD TRACKING SYSTEM
 -- =============================================================================
 
 -- Daily mood entries
-CREATE TABLE mood_entries (
+CREATE TABLE IF NOT EXISTS mood_entries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     -- Core mood data
@@ -404,7 +377,7 @@ CREATE TABLE mood_entries (
 -- =============================================================================
 
 -- Self-help programs
-CREATE TABLE self_help_programs (
+CREATE TABLE IF NOT EXISTS self_help_programs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(200) NOT NULL,
     description TEXT NOT NULL,
@@ -427,7 +400,7 @@ CREATE TABLE self_help_programs (
 );
 
 -- Individual lessons within programs
-CREATE TABLE lessons (
+CREATE TABLE IF NOT EXISTS lessons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     program_id UUID NOT NULL REFERENCES self_help_programs(id) ON DELETE CASCADE,
     title VARCHAR(200) NOT NULL,
@@ -453,7 +426,7 @@ CREATE TABLE lessons (
 );
 
 -- User progress tracking for programs and lessons
-CREATE TABLE lesson_progress (
+CREATE TABLE IF NOT EXISTS lesson_progress (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     program_id UUID NOT NULL REFERENCES self_help_programs(id) ON DELETE CASCADE,
@@ -481,7 +454,7 @@ CREATE TABLE lesson_progress (
 -- =============================================================================
 
 -- User notifications
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     -- Notification content
@@ -514,7 +487,7 @@ CREATE TABLE notifications (
 -- =============================================================================
 
 -- Revenue and payment transactions
-CREATE TABLE revenue_transactions (
+CREATE TABLE IF NOT EXISTS revenue_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     therapist_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -551,61 +524,61 @@ CREATE TABLE revenue_transactions (
 -- =============================================================================
 
 -- User and authentication indexes
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_type ON users(user_type);
-CREATE INDEX idx_users_created_at ON users(created_at);
-CREATE INDEX idx_email_verifications_user_id ON email_verifications(user_id);
-CREATE INDEX idx_email_verifications_code ON email_verifications(verification_code);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_type ON users(user_type);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_user_id ON email_verifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_code ON email_verifications(verification_code);
 
 -- Profile indexes
-CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX idx_therapist_profiles_user_id ON therapist_profiles(user_id);
-CREATE INDEX idx_therapist_profiles_verified ON therapist_profiles(is_verified);
-CREATE INDEX idx_therapist_profiles_accepting ON therapist_profiles(is_accepting_clients);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_therapist_profiles_user_id ON therapist_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_therapist_profiles_verified ON therapist_profiles(is_verified);
+CREATE INDEX IF NOT EXISTS idx_therapist_profiles_accepting ON therapist_profiles(is_accepting_clients);
 
 -- Session and relationship indexes
-CREATE INDEX idx_therapy_sessions_therapist_id ON therapy_sessions(therapist_id);
-CREATE INDEX idx_therapy_sessions_client_id ON therapy_sessions(client_id);
-CREATE INDEX idx_therapy_sessions_scheduled_start ON therapy_sessions(scheduled_start_time);
-CREATE INDEX idx_therapy_sessions_status ON therapy_sessions(status);
-CREATE INDEX idx_therapist_client_relationships_therapist ON therapist_client_relationships(therapist_id);
-CREATE INDEX idx_therapist_client_relationships_client ON therapist_client_relationships(client_id);
+CREATE INDEX IF NOT EXISTS idx_therapy_sessions_therapist_id ON therapy_sessions(therapist_id);
+CREATE INDEX IF NOT EXISTS idx_therapy_sessions_client_id ON therapy_sessions(client_id);
+CREATE INDEX IF NOT EXISTS idx_therapy_sessions_scheduled_start ON therapy_sessions(scheduled_start_time);
+CREATE INDEX IF NOT EXISTS idx_therapy_sessions_status ON therapy_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_therapist_client_relationships_therapist ON therapist_client_relationships(therapist_id);
+CREATE INDEX IF NOT EXISTS idx_therapist_client_relationships_client ON therapist_client_relationships(client_id);
 
 -- Chat and messaging indexes
-CREATE INDEX idx_chat_messages_sender ON chat_messages(sender_id);
-CREATE INDEX idx_chat_messages_recipient ON chat_messages(recipient_id);
-CREATE INDEX idx_chat_messages_conversation_type ON chat_messages(conversation_type);
-CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
-CREATE INDEX idx_chat_messages_crisis ON chat_messages(is_crisis_message) WHERE is_crisis_message = true;
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_recipient ON chat_messages(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_type ON chat_messages(conversation_type);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_crisis ON chat_messages(is_crisis_message) WHERE is_crisis_message = true;
 
 -- Mood tracking indexes
-CREATE INDEX idx_mood_entries_user_id ON mood_entries(user_id);
-CREATE INDEX idx_mood_entries_date ON mood_entries(entry_date);
-CREATE INDEX idx_mood_entries_user_date ON mood_entries(user_id, entry_date);
+CREATE INDEX IF NOT EXISTS idx_mood_entries_user_id ON mood_entries(user_id);
+CREATE INDEX IF NOT EXISTS idx_mood_entries_date ON mood_entries(entry_date);
+CREATE INDEX IF NOT EXISTS idx_mood_entries_user_date ON mood_entries(user_id, entry_date);
 
 -- Program and lesson indexes
-CREATE INDEX idx_lessons_program_id ON lessons(program_id);
-CREATE INDEX idx_lesson_progress_user_id ON lesson_progress(user_id);
-CREATE INDEX idx_lesson_progress_program_id ON lesson_progress(program_id);
-CREATE INDEX idx_lesson_progress_lesson_id ON lesson_progress(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_program_id ON lessons(program_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_progress_user_id ON lesson_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_progress_program_id ON lesson_progress(program_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson_id ON lesson_progress(lesson_id);
 
 -- Notification indexes
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_type ON notifications(notification_type);
-CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = false;
-CREATE INDEX idx_notifications_scheduled ON notifications(scheduled_for) WHERE scheduled_for IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(notification_type);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = false;
+CREATE INDEX IF NOT EXISTS idx_notifications_scheduled ON notifications(scheduled_for) WHERE scheduled_for IS NOT NULL;
 
 -- Revenue indexes
-CREATE INDEX idx_revenue_transactions_therapist ON revenue_transactions(therapist_id);
-CREATE INDEX idx_revenue_transactions_client ON revenue_transactions(client_id);
-CREATE INDEX idx_revenue_transactions_date ON revenue_transactions(transaction_date);
-CREATE INDEX idx_revenue_transactions_status ON revenue_transactions(payment_status);
+CREATE INDEX IF NOT EXISTS idx_revenue_transactions_therapist ON revenue_transactions(therapist_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_transactions_client ON revenue_transactions(client_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_transactions_date ON revenue_transactions(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_revenue_transactions_status ON revenue_transactions(payment_status);
 
 -- =============================================================================
 -- THERAPIST HANDOFF STATE
 -- =============================================================================
 
-CREATE TABLE therapist_handoffs (
+CREATE TABLE IF NOT EXISTS therapist_handoffs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL CHECK (
@@ -617,7 +590,7 @@ CREATE TABLE therapist_handoffs (
     UNIQUE(user_id)
 );
 
-CREATE INDEX idx_therapist_handoffs_user_id ON therapist_handoffs(user_id);
+CREATE INDEX IF NOT EXISTS idx_therapist_handoffs_user_id ON therapist_handoffs(user_id);
 
 -- =============================================================================
 -- FUNCTIONS AND TRIGGERS
@@ -698,30 +671,39 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at columns
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_therapist_profiles_updated_at ON therapist_profiles;
 CREATE TRIGGER update_therapist_profiles_updated_at BEFORE UPDATE ON therapist_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_settings_updated_at ON user_settings;
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_therapist_handoffs_updated_at ON therapist_handoffs;
 CREATE TRIGGER update_therapist_handoffs_updated_at BEFORE UPDATE ON therapist_handoffs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_therapy_sessions_updated_at ON therapy_sessions;
 CREATE TRIGGER update_therapy_sessions_updated_at BEFORE UPDATE ON therapy_sessions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_chat_messages_updated_at ON chat_messages;
 CREATE TRIGGER update_chat_messages_updated_at BEFORE UPDATE ON chat_messages
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_mood_entries_updated_at ON mood_entries;
 CREATE TRIGGER update_mood_entries_updated_at BEFORE UPDATE ON mood_entries
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_notifications_updated_at ON notifications;
 CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -730,30 +712,24 @@ CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON notifications
 -- =============================================================================
 
 -- Insert sample client user
-INSERT INTO users (id, email, password_hash, user_type, is_verified) VALUES 
-('11111111-1111-1111-1111-111111111111', 'client@therafam.com', '$2b$12$sample_hash', 'client', true);
-
+-- Demo user/profile seed removed: only real signups should create accounts.
 -- Insert sample therapist user
-INSERT INTO users (id, email, password_hash, user_type, is_verified) VALUES 
-('22222222-2222-2222-2222-222222222222', 'therapist@therafam.com', '$2b$12$sample_hash', 'therapist', true);
-
+-- Demo user/profile seed removed: only real signups should create accounts.
 -- Insert sample client profile
-INSERT INTO user_profiles (user_id, first_name, last_name, anxiety_level, depression_level) VALUES 
-('11111111-1111-1111-1111-111111111111', 'Demo', 'Client', 6, 4);
-
+-- Demo user/profile seed removed: only real signups should create accounts.
 -- Insert sample therapist profile
-INSERT INTO therapist_profiles (user_id, first_name, last_name, license_number, specializations, hourly_rate, is_verified) VALUES 
-('22222222-2222-2222-2222-222222222222', 'Dr. Sarah', 'Johnson', 'LIC123456', ARRAY['anxiety', 'depression', 'trauma'], 150.00, true);
-
+-- Demo user/profile seed removed: only real signups should create accounts.
 -- Insert sample self-help programs
 INSERT INTO self_help_programs (id, title, description, category, total_lessons) VALUES 
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Anxiety Management Basics', 'Learn fundamental techniques for managing anxiety in daily life', 'anxiety', 7),
-('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Mindfulness for Beginners', 'Introduction to mindfulness and meditation practices', 'stress', 5);
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Mindfulness for Beginners', 'Introduction to mindfulness and meditation practices', 'stress', 5)
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert sample lessons
 INSERT INTO lessons (program_id, title, lesson_number, content_text, duration_minutes) VALUES 
 ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Understanding Anxiety', 1, 'Learn what anxiety is and how it affects your body and mind...', 15),
-('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Breathing Techniques', 2, 'Practice deep breathing exercises to calm your nervous system...', 20);
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Breathing Techniques', 2, 'Practice deep breathing exercises to calm your nervous system...', 20)
+ON CONFLICT (program_id, lesson_number) DO NOTHING;
 
 -- =============================================================================
 -- SECURITY AND PERMISSIONS
@@ -773,7 +749,7 @@ INSERT INTO lessons (program_id, title, lesson_number, content_text, duration_mi
 -- =============================================================================
 
 -- View for therapist dashboard stats
-CREATE VIEW therapist_dashboard_view AS
+CREATE OR REPLACE VIEW therapist_dashboard_view AS
 SELECT 
     tp.user_id as therapist_id,
     tp.first_name,
@@ -795,7 +771,7 @@ LEFT JOIN revenue_transactions rt ON rt.therapist_id = tp.user_id
 GROUP BY tp.user_id, tp.first_name, tp.last_name, tp.rating;
 
 -- View for client mood trends
-CREATE VIEW client_mood_trends AS
+CREATE OR REPLACE VIEW client_mood_trends AS
 SELECT 
     user_id,
     DATE_TRUNC('week', entry_date) as week_start,

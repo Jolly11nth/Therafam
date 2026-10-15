@@ -24,3 +24,6 @@ SELECT id, 'premium', 'trialing', NOW(), NOW() + INTERVAL '7 days'
 FROM users
 WHERE user_type = 'client'
 ON CONFLICT (user_id) DO NOTHING;
+
+-- Keep therapist sign-up/profile fields compatible with existing Railway databases.
+ALTER TABLE therapist_profiles ADD COLUMN IF NOT EXISTS professional_title VARCHAR(120);

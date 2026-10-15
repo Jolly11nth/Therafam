@@ -1,5 +1,6 @@
 import { T, translate } from '../lib/i18n';
 import { useState } from 'react';
+import { getStoredUserId, submitSupport as submitSupportRequest } from '../lib/therafamApi';
 import Brand from '../components/Brand';
 
 type Props = { onBack: () => void; onHome: () => void };
@@ -8,15 +9,33 @@ type SupportPanel = 'faq' | 'contact' | 'report' | 'safety' | null;
 export default function Support({ onBack, onHome }: Props) {
   const [panel, setPanel] = useState<SupportPanel>(null);
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const userId = getStoredUserId();
 
   function openPanel(next: Exclude<SupportPanel, null>) {
     setSent(false);
+    setError('');
     setPanel(next);
   }
 
-  function submitSupport(event: React.FormEvent<HTMLFormElement>) {
+  async function submitSupport(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSent(true);
+    const form = event.currentTarget;
+    const message = String(new FormData(form).get('message') ?? '').trim();
+    if (!userId) { setError('Sign in before submitting a support request so it can be attached to your account.'); return; }
+    if (!message) return;
+    setSending(true);
+    setError('');
+    try {
+      await submitSupportRequest(userId, panel === 'report' ? 'report' : 'contact', message);
+      setSent(true);
+      form.reset();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Your request could not be saved. Please try again.');
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -47,9 +66,9 @@ export default function Support({ onBack, onHome }: Props) {
             {panel === 'safety' && <div className="support-content"><p><T>Use Therafam as a wellbeing support tool, not as an emergency service. For immediate danger or urgent safety concerns, contact a trusted person or your local emergency service.</T></p><p><T>For privacy questions, review your account privacy controls or contact the support team.</T></p></div>}
             {(panel === 'contact' || panel === 'report') && (
               <form className="support-form" onSubmit={submitSupport}>
-                <label><span><T>{panel === 'report' ? 'What went wrong?' : 'How can we help?'}</T></span><textarea required rows={5} placeholder={panel === 'report' ? 'Describe the problem and what you expected to happen…' : 'Tell us what you need help with…'} /></label>
-                <div className="support-form-actions"><button className="outline-action" type="button" onClick={() => setPanel(null)}><T>Cancel</T></button><button className="primary-action" type="submit"><T>{panel === 'report' ? 'Submit report' : 'Send message'}</T></button></div>
-                {sent && <p className="form-message"><T>Thanks. Your message has been recorded in this session. Backend submission can be connected to the support endpoint next.</T></p>}
+                <label><span><T>{panel === 'report' ? 'What went wrong?' : 'How can we help?'}</T></span><textarea name="message" required rows={5} placeholder={panel === 'report' ? 'Describe the problem and what you expected to happen…' : 'Tell us what you need help with…'} /></label>
+                <div className="support-form-actions"><button className="outline-action" type="button" onClick={() => setPanel(null)}><T>Cancel</T></button><button className="primary-action" type="submit" disabled={sending}><T>{sending ? 'Saving…' : panel === 'report' ? 'Submit report' : 'Send message'}</T></button></div>
+                {sent && <p className="form-message"><T>Your request was saved to your account’s support notifications.</T></p>}{error && <p className="form-error"><T>{error}</T></p>}
               </form>
             )}
           </section>

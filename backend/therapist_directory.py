@@ -24,7 +24,7 @@ def clean(row):
 
 @router.get("/api/therapists")
 def available_therapists(user=Depends(current_user)):
-    rows = many("""SELECT tp.user_id,tp.first_name,tp.last_name,tp.license_state,tp.specializations,
+    rows = many("""SELECT tp.user_id,tp.first_name,tp.last_name,tp.professional_title,tp.license_state,tp.specializations,
                         tp.degrees,tp.certifications,tp.years_experience,tp.bio,tp.profile_picture_url,
                         tp.languages_spoken,tp.treatment_approaches,tp.age_groups_served,tp.rating,
                         tp.total_reviews,tp.total_sessions,tp.is_verified,tp.is_accepting_clients,

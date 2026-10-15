@@ -1,7 +1,7 @@
 import { T, translate } from '../lib/i18n';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Brand from '../components/Brand';
-import { sendAiMessage, type ChatMessage } from '../lib/therafamApi';
+import { getAiChatHistory, getStoredUserId, sendAiMessage, type ChatMessage } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void };
 
@@ -12,6 +12,26 @@ export default function AIChat({ onBack, onHome }: Props) {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [historyNotice, setHistoryNotice] = useState('');
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const userId = getStoredUserId();
+
+  useEffect(() => {
+    let active = true;
+    if (!userId) { setHistoryLoading(false); return () => { active = false; }; }
+    getAiChatHistory(userId).then((items) => {
+      if (!active || !items.length) return;
+      const restored: ChatMessage[] = [];
+      for (const item of items) {
+        if (item.input_text) restored.push({ role: 'user', content: item.input_text, created_at: item.created_at });
+        if (item.response_text) restored.push({ role: 'assistant', content: item.response_text, created_at: item.created_at });
+      }
+      if (restored.length) setMessages(restored);
+    }).catch(() => {
+      if (active) setHistoryNotice('Saved conversation history could not be loaded from your account.');
+    }).finally(() => { if (active) setHistoryLoading(false); });
+    return () => { active = false; };
+  }, [userId]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -23,8 +43,11 @@ export default function AIChat({ onBack, onHome }: Props) {
     setMessages(next);
     setSending(true);
     try {
-      const result = await sendAiMessage(message, next);
+      const result = await sendAiMessage(message, messages, userId);
       setMessages((current) => [...current, { role: 'assistant', content: result.response }]);
+      if (result.history_disabled) setHistoryNotice('Your preference keeps AI conversations out of saved history.');
+      else if (result.history_saved === false) setHistoryNotice('Your reply was generated, but this exchange could not be saved to your account.');
+      else setHistoryNotice('');
     } catch {
       setError('The AI service could not be reached. Your conversation is still visible here; try again when the backend is available.');
     } finally {
@@ -54,7 +77,7 @@ export default function AIChat({ onBack, onHome }: Props) {
             {messages.map((message, index) => <div key={index} className={`chat-bubble ${message.role === 'user' ? 'chat-user' : 'chat-ai'}`}><T>{message.content}</T></div>)}
             {sending && <div className="chat-bubble chat-ai"><T>Thinking…</T></div>}
           </div>
-          {error && <div className="chat-error"><T>{error}</T></div>}
+          {historyLoading && <div className="loading-copy"><T>Loading saved conversation…</T></div>}{historyNotice && <div className="chat-error"><T>{historyNotice}</T></div>}{error && <div className="chat-error"><T>{error}</T></div>}
           <form className="chat-composer" onSubmit={submit}>
             <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={translate("Write what’s on your mind…")} aria-label={translate("Message Therafam AI")} />
             <button className="primary-action" type="submit" disabled={sending || !draft.trim()}><T>{sending ? 'Sending…' : 'Send'}</T></button>

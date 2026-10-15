@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from .auth import current_user
-from .db import execute, many, one
+from .db import connection, execute, many, one
 
 router = APIRouter()
 
@@ -46,12 +46,6 @@ def my_bookings(user=Depends(current_user)):
 def create_booking(payload: BookingCreate, user=Depends(current_user)):
     if user["user_type"] != "client":
         raise HTTPException(403, "Only client accounts can book therapists")
-    therapist = one("""SELECT tp.user_id,tp.is_accepting_clients,tp.timezone FROM therapist_profiles tp
-                       JOIN users u ON u.id=tp.user_id
-                       WHERE tp.user_id=%s AND u.user_type='therapist' AND u.is_active=TRUE
-                         AND tp.is_verified=TRUE AND tp.is_accepting_clients=TRUE""", (payload.therapist_id,))
-    if not therapist:
-        raise HTTPException(404, "Therapist is not currently accepting clients")
     if payload.scheduled_start_time.tzinfo is None or payload.scheduled_end_time.tzinfo is None:
         raise HTTPException(400, "Booking times must include a timezone")
     if payload.scheduled_start_time <= datetime.now(payload.scheduled_start_time.tzinfo):
@@ -61,36 +55,73 @@ def create_booking(payload: BookingCreate, user=Depends(current_user)):
     duration_minutes = (payload.scheduled_end_time - payload.scheduled_start_time).total_seconds() / 60
     if duration_minutes < 30 or duration_minutes > 180:
         raise HTTPException(400, "Sessions must be between 30 and 180 minutes")
-    tz_name = therapist.get("timezone") or "UTC"
-    try:
-        local_start = payload.scheduled_start_time.astimezone(ZoneInfo(tz_name))
-        local_end = payload.scheduled_end_time.astimezone(ZoneInfo(tz_name))
-    except Exception:
-        local_start = payload.scheduled_start_time.astimezone(ZoneInfo("UTC"))
-        local_end = payload.scheduled_end_time.astimezone(ZoneInfo("UTC"))
-    if local_start.date() != local_end.date():
-        raise HTTPException(400, "A session must start and end on the same day")
-    day = (local_start.weekday() + 1) % 7
-    slot = one("""SELECT id FROM therapist_availability
-                 WHERE therapist_id=%s AND day_of_week=%s AND is_available=TRUE
-                   AND start_time <= %s::time AND end_time >= %s::time LIMIT 1""",
-               (payload.therapist_id, day, local_start.time(), local_end.time()))
-    if not slot:
-        raise HTTPException(409, "That time is outside the therapist's available hours")
-    overlap = one("""SELECT id FROM therapy_sessions
-                     WHERE therapist_id=%s AND status IN ('scheduled','in_progress')
-                       AND scheduled_start_time < %s AND scheduled_end_time > %s LIMIT 1""",
-                  (payload.therapist_id, payload.scheduled_end_time, payload.scheduled_start_time))
-    if overlap:
-        raise HTTPException(409, "That time is no longer available")
-    relationship = one("""SELECT id FROM therapist_client_relationships
-                        WHERE therapist_id=%s AND client_id=%s AND status='active'""", (payload.therapist_id, user["id"]))
-    if not relationship:
-        execute("""INSERT INTO therapist_client_relationships(therapist_id,client_id,status)
-                   VALUES(%s,%s,'active') RETURNING id""", (payload.therapist_id,user["id"]))
-    session = execute("""INSERT INTO therapy_sessions
-        (therapist_id,client_id,scheduled_start_time,scheduled_end_time,session_type,session_format,session_goals,status)
-        VALUES(%s,%s,%s,%s,%s,%s,%s,'scheduled') RETURNING *""",
-        (payload.therapist_id,user["id"],payload.scheduled_start_time,payload.scheduled_end_time,
-         payload.session_type,payload.session_format,payload.session_goals))
+
+    # Keep availability, overlap checks, relationship creation and session insertion
+    # in one transaction. Lock the therapist profile so concurrent booking requests
+    # cannot both pass the overlap check for the same therapist.
+    with connection() as conn:
+        therapist = conn.execute(
+            """SELECT tp.user_id,tp.is_accepting_clients,tp.timezone
+               FROM therapist_profiles tp
+               JOIN users u ON u.id=tp.user_id
+               WHERE tp.user_id=%s AND u.user_type='therapist' AND u.is_active=TRUE
+                 AND tp.is_verified=TRUE AND tp.is_accepting_clients=TRUE
+               FOR UPDATE OF tp""",
+            (payload.therapist_id,),
+        ).fetchone()
+        if not therapist:
+            raise HTTPException(404, "Therapist is not currently accepting clients")
+
+        tz_name = therapist.get("timezone") or "UTC"
+        try:
+            local_start = payload.scheduled_start_time.astimezone(ZoneInfo(tz_name))
+            local_end = payload.scheduled_end_time.astimezone(ZoneInfo(tz_name))
+        except Exception:
+            local_start = payload.scheduled_start_time.astimezone(ZoneInfo("UTC"))
+            local_end = payload.scheduled_end_time.astimezone(ZoneInfo("UTC"))
+        if local_start.date() != local_end.date():
+            raise HTTPException(400, "A session must start and end on the same day")
+
+        day = (local_start.weekday() + 1) % 7
+        local_start_time = local_start.time().replace(tzinfo=None)
+        local_end_time = local_end.time().replace(tzinfo=None)
+        slot = conn.execute(
+            """SELECT id FROM therapist_availability
+               WHERE therapist_id=%s AND day_of_week=%s AND is_available=TRUE
+                 AND start_time <= %s::time AND end_time >= %s::time
+               LIMIT 1""",
+            (payload.therapist_id, day, local_start_time, local_end_time),
+        ).fetchone()
+        if not slot:
+            raise HTTPException(409, "That time is outside the therapist's available hours")
+
+        overlap = conn.execute(
+            """SELECT id FROM therapy_sessions
+               WHERE therapist_id=%s AND status IN ('scheduled','in_progress')
+                 AND scheduled_start_time < %s AND scheduled_end_time > %s
+               LIMIT 1""",
+            (payload.therapist_id, payload.scheduled_end_time, payload.scheduled_start_time),
+        ).fetchone()
+        if overlap:
+            raise HTTPException(409, "That time is no longer available")
+
+        relationship = conn.execute(
+            """SELECT id FROM therapist_client_relationships
+               WHERE therapist_id=%s AND client_id=%s AND status='active'""",
+            (payload.therapist_id, user["id"]),
+        ).fetchone()
+        if not relationship:
+            conn.execute(
+                """INSERT INTO therapist_client_relationships(therapist_id,client_id,status)
+                   VALUES(%s,%s,'active')""",
+                (payload.therapist_id, user["id"]),
+            )
+        session = conn.execute(
+            """INSERT INTO therapy_sessions
+               (therapist_id,client_id,scheduled_start_time,scheduled_end_time,
+                session_type,session_format,session_goals,status)
+               VALUES(%s,%s,%s,%s,%s,%s,%s,'scheduled') RETURNING *""",
+            (payload.therapist_id,user["id"],payload.scheduled_start_time,payload.scheduled_end_time,
+             payload.session_type,payload.session_format,payload.session_goals),
+        ).fetchone()
     return {"booking": session, "confirmed": True}

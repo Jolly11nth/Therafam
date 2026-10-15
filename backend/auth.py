@@ -29,9 +29,17 @@ def verify_password(password: str, encoded: str) -> bool:
         return hmac.compare_digest(digest.hex(),digest_hex)
     except (ValueError,TypeError): return False
 
-def issue_session(user_id: str) -> str:
-    raw=secrets.token_urlsafe(48); token_hash=hashlib.sha256(raw.encode()).hexdigest(); expires=datetime.now(timezone.utc)+timedelta(days=SESSION_DAYS)
-    execute("INSERT INTO user_sessions(user_id,token_hash,expires_at) VALUES(%s,%s,%s)",(user_id,token_hash,expires))
+def issue_session(user_id: str, conn=None) -> str:
+    """Create a bearer session, optionally as part of the caller's transaction."""
+    raw = secrets.token_urlsafe(48)
+    token_hash = hashlib.sha256(raw.encode()).hexdigest()
+    expires = datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)
+    query = "INSERT INTO user_sessions(user_id,token_hash,expires_at) VALUES(%s,%s,%s)"
+    params = (user_id, token_hash, expires)
+    if conn is None:
+        execute(query, params)
+    else:
+        conn.execute(query, params)
     return raw
 
 def revoke_session(raw_token: str)->None:
