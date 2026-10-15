@@ -137,20 +137,31 @@ def health():
             (required_extensions,),
         )}
         missing_extensions = [ext for ext in required_extensions if ext not in installed_extensions]
+        required_columns = [("therapist_profiles", "professional_title")]
+        existing_columns = {
+            (row["table_name"], row["column_name"]) for row in many(
+                """SELECT table_name,column_name FROM information_schema.columns
+                   WHERE table_schema='public'
+                     AND (table_name,column_name) IN (('therapist_profiles','professional_title'))"""
+            )
+        }
+        missing_columns = [f"{table}.{column}" for table, column in required_columns if (table, column) not in existing_columns]
         vector = "vector" in installed_extensions
         db = True
     except Exception:
         db = False
         missing = required_tables
         missing_extensions = ["uuid-ossp", "pgcrypto", "vector"]
+        missing_columns = ["therapist_profiles.professional_title"]
         vector = False
-    ready = db and not missing and not missing_extensions
+    ready = db and not missing and not missing_extensions and not missing_columns
     return {
         "status": "ok" if ready else "degraded" if db else "unavailable",
         "service": "therafam-api",
         "database_configured": db,
         "schema_ready": ready,
         "missing_tables": missing,
+        "missing_columns": missing_columns,
         "missing_extensions": missing_extensions,
         "vector_extension": vector,
     }
