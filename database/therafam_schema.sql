@@ -8,36 +8,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- =============================================================================
--- CLEANUP (for development - remove in production)
--- =============================================================================
+-- Production-safe schema: create missing tables only; never drop existing data.
 
--- Drop functions first
-DROP FUNCTION IF EXISTS match_documents(vector, int);
-DROP FUNCTION IF EXISTS get_user_mood_trend(uuid, int);
-DROP FUNCTION IF EXISTS get_therapist_stats(uuid);
-
--- Drop tables in correct order (reverse of creation due to foreign keys)
-DROP TABLE IF EXISTS ai_conversations CASCADE;
-DROP TABLE IF EXISTS therapy_session_notes CASCADE;
-DROP TABLE IF EXISTS therapy_sessions CASCADE;
-DROP TABLE IF EXISTS mood_entries CASCADE;
-DROP TABLE IF EXISTS lesson_progress CASCADE;
-DROP TABLE IF EXISTS lessons CASCADE;
-DROP TABLE IF EXISTS self_help_programs CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS chat_messages CASCADE;
-DROP TABLE IF EXISTS therapist_client_relationships CASCADE;
-DROP TABLE IF EXISTS therapist_availability CASCADE;
-DROP TABLE IF EXISTS revenue_transactions CASCADE;
-DROP TABLE IF EXISTS user_settings CASCADE;
-DROP TABLE IF EXISTS therapist_profiles CASCADE;
-DROP TABLE IF EXISTS user_profiles CASCADE;
-DROP TABLE IF EXISTS email_verifications CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS therapy_notes CASCADE;
-DROP TABLE IF EXISTS documents CASCADE;
-
--- =============================================================================
 -- CORE USER TABLES
 -- =============================================================================
 
