@@ -1,6 +1,7 @@
 import { T, translate } from '../lib/i18n';
 import { useEffect, useState } from 'react';
 import Brand from '../components/Brand';
+import ExternalSelfHelpResources from '../components/ExternalSelfHelpResources';
 import { completeLesson, getLessons, getProgramProgress, getPrograms, type Program } from '../lib/therafamApi';
 
 type Props = { onBack: () => void; onHome: () => void };
@@ -114,6 +115,7 @@ export default function Programs({ onBack, onHome }: Props) {
           </div>
           </>
         )}
+        <ExternalSelfHelpResources />
       </div>
     </section>
   );

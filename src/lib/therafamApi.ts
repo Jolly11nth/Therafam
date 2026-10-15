@@ -48,3 +48,9 @@ export async function createBooking(payload:{therapist_id:string;scheduled_start
 export async function getMyBookings(){return (await api<{bookings:any[]}>('/api/my/bookings',{},getStoredUserId())).bookings}
 export type SubscriptionStatus={subscription:any;features_locked:boolean;trial_days_remaining:number|null};export type TherapistEarnings={available_balance:number;pending_balance:number;total_earned:number;total_withdrawn:number;performance:any;transactions:any[]};
 export async function getSubscription(userId:string){return api<SubscriptionStatus>('/api/subscription',{},userId)}export async function upgradeSubscription(userId:string,plan:'premium_monthly'|'premium_annual'='premium_monthly'){return api('/api/subscription/upgrade',{method:'POST',body:JSON.stringify({plan})},userId)}export async function getTherapistEarnings(userId:string){return api<TherapistEarnings>('/api/therapist/earnings',{},userId)}export async function recalculateTherapistEarnings(userId:string){return api<{recalculated:boolean;new_earnings:number}>('/api/therapist/earnings/recalculate',{method:'POST'},userId)}export async function getTherapistPerformance(userId:string){return api<{performance_history:any[]}>('/api/therapist/performance',{},userId)}
+
+export type ExternalSelfHelpResource={title:string;summary:string;url:string;source:string};
+export async function searchExternalSelfHelpResources(query:string,language:'en'|'es'='en'){
+ const params=new URLSearchParams({q:query,language});
+ return api<{query:string;language:'en'|'es';source:string;attribution:string;results:ExternalSelfHelpResource[]}>(`/api/external/self-help-resources?${params.toString()}`,{},getStoredUserId());
+}
