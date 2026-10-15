@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import Brand from './components/Brand';import ClientDashboard from './pages/ClientDashboard';import MoodCheckIn from './pages/MoodCheckIn';import AIChat from './pages/AIChat';import Programs from './pages/Programs';import Messages from './pages/Messages';import Settings from './pages/Settings';import Support from './pages/Support';import TherapistDirectory from './pages/TherapistDirectory';import TherapistPortal from './pages/TherapistPortalInteractive';import {callBackend} from './lib/supabase';
+import Brand from './components/Brand';import ClientDashboard from './pages/ClientDashboard';import MoodCheckIn from './pages/MoodCheckIn';import AIChat from './pages/AIChat';import Programs from './pages/Programs';import Messages from './pages/Messages';import Settings from './pages/Settings';import Support from './pages/Support';import TherapistDirectory from './pages/TherapistDirectory';import TherapistPortal from './pages/TherapistPortalInteractive';import {callBackend} from './lib/apiClient';
 import {getHealth} from './lib/therafamApi';import {getLanguage,getTheme,setLanguage,applyTheme,type Language,type Theme} from './lib/preferences';
 import { T, LANGUAGES, translate, useLanguageRefresh } from './lib/i18n';
 
