@@ -36,7 +36,7 @@ export default function MoodCheckIn({ onBack, onHome }: Props) {
   }, [userId]);
 
   async function save() {
-    if (!userId) { setMessage('Demo mode: sign in to save your check-in to your account.'); return; }
+    if (!userId) { setMessage('Sign in to save your check-in to PostgreSQL.'); return; }
     setSaving(true); setMessage('');
     try {
       const saved = await saveMoodEntry({ user_id: userId, mood_value: mood, mood_label: moods.find((item) => item.value === mood)?.label ?? 'Okay', energy_level: energy, stress_level: stress, notes: note || null, entry_date: new Date().toISOString().slice(0, 10) });
