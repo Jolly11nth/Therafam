@@ -8,6 +8,7 @@ import './preferences.css';
 import './therapist-interactions.css';
 import './therapist-dashboard-polish.css';
 import './ux-refresh.css';
+import './mood-experience.css';
 
 initializePreferences();
 
