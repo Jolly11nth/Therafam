@@ -1,0 +1,234 @@
+/* Therafam mood experience — intentional, calm, high-clarity visual language. */
+:root {
+  --mood-ink: #153d3b;
+  --mood-muted: #647f7c;
+  --mood-teal: #398f82;
+  --mood-teal-deep: #256d64;
+  --mood-line: #dbe9e6;
+  --mood-paper: #ffffff;
+  --mood-wash: #f2f8f6;
+  --mood-rose: #e46e76;
+  --mood-amber: #d9a242;
+  --mood-blue: #598fc7;
+  --mood-radius: 24px;
+}
+.mood-page { min-height: 100vh; }
+.mood-page .workspace-topbar { position: sticky; top: 0; z-index: 5; }
+.mood-topbar-actions { display: flex; align-items: center; gap: 20px; }
+.mood-privacy-chip { display: inline-flex; align-items: center; gap: 8px; color: #64817c; font-size: 12px; font-weight: 750; }
+.mood-privacy-chip > span { width: 7px; height: 7px; border-radius: 50%; background: #41a487; box-shadow: 0 0 0 4px rgba(65,164,135,.12); }
+.mood-content { width: min(1320px, calc(100% - 64px)); padding-top: clamp(34px, 4vw, 54px); }
+.mood-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+.mood-page-header h1 { margin: 9px 0 11px; font-size: clamp(34px, 4vw, 48px); line-height: 1.08; letter-spacing: -.055em; color: var(--mood-ink); }
+.mood-page-header p { margin: 0; max-width: 630px; color: var(--mood-muted); font-size: 15px; }
+.mood-date-card { display: flex; align-items: center; gap: 12px; min-width: 190px; padding: 12px 15px; border: 1px solid rgba(205,225,219,.9); border-radius: 16px; background: rgba(255,255,255,.76); box-shadow: 0 6px 20px rgba(23,74,68,.035); }
+.mood-date-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: var(--mood-teal-deep); background: #e5f4f0; }
+.mood-date-icon svg, .mood-mini-lock svg, .mood-chart-icon svg, .mood-form-footer svg, .mood-history-empty svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.mood-date-card > span:nth-child(2) { display: grid; gap: 2px; }
+.mood-date-card small { color: #78918d; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.mood-date-card strong { color: var(--mood-ink); font-size: 14px; }
+.mood-done-indicator { display: grid; place-items: center; margin-left: auto; width: 24px; height: 24px; border-radius: 50%; color: #18785d; background: #def5e9; font-weight: 900; }
+.mood-layout-grid { display: grid; grid-template-columns: minmax(0, 1.56fr) minmax(305px, .84fr); align-items: start; gap: 22px; }
+.mood-page .mood-main-card, .mood-page .mood-trend-card, .mood-page .mood-history-card { padding: clamp(22px, 2.6vw, 34px); border-radius: var(--mood-radius); background: rgba(255,255,255,.97); border: 1px solid #dceae6; box-shadow: 0 18px 48px rgba(25,78,71,.055); }
+.mood-main-card { min-width: 0; }
+.mood-card-topline, .mood-side-title, .mood-form-footer, .mood-note-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.mood-step { display: inline-flex; align-items: center; gap: 10px; color: #7b9490; font-size: 10px; font-weight: 900; letter-spacing: .13em; }
+.mood-step > span:first-child { display: inline-grid; place-items: center; width: 27px; height: 27px; border-radius: 9px; color: var(--mood-teal-deep); background: #e3f3ef; font-size: 11px; letter-spacing: 0; }
+.mood-mini-lock { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #e0eeea; border-radius: 999px; color: #688781; background: #f9fcfb; font-size: 10px; font-weight: 800; }
+.mood-mini-lock svg { width: 14px; height: 14px; }
+.mood-main-card > h2 { margin: 24px 0 8px; color: var(--mood-ink); font-size: clamp(23px, 2.3vw, 29px); letter-spacing: -.04em; }
+.mood-card-subtitle { margin: 0; color: #69827e; font-size: 13px; line-height: 1.65; }
+.mood-choice-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 11px; margin-top: 25px; }
+.mood-choice { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; --mood-face-bg: #e3f2ee; position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; min-height: 158px !important; padding: 15px 7px 12px; overflow: hidden; border: 1px solid #e0ebe8; border-radius: 19px; color: #315956; background: linear-gradient(180deg,#fff 5%,#fbfdfc 100%); box-shadow: 0 3px 12px rgba(28,79,72,.025); cursor: pointer; transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+.mood-choice::before { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--mood-accent); opacity: 0; transform: scaleX(.45); transition: opacity 160ms ease, transform 160ms ease; }
+.mood-choice:hover { border-color: #b7d7d0; box-shadow: 0 8px 20px rgba(26,86,77,.07); transform: translateY(-2px); }
+.mood-choice.selected { border-color: var(--mood-accent); background: linear-gradient(180deg, var(--mood-accent-soft), #fff 94%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mood-accent) 13%, transparent), 0 10px 24px rgba(25,78,71,.06); }
+.mood-choice.selected::before { opacity: 1; transform: scaleX(1); }
+.mood-choice[data-mood="1"] { --mood-accent: #d85e69; --mood-accent-soft: #fff0f0; --mood-face-bg: #ffe0e0; }
+.mood-choice[data-mood="2"] { --mood-accent: #df8667; --mood-accent-soft: #fff4ed; --mood-face-bg: #ffe9d9; }
+.mood-choice[data-mood="3"] { --mood-accent: #c69a38; --mood-accent-soft: #fff8e5; --mood-face-bg: #f8edc8; }
+.mood-choice[data-mood="4"] { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; --mood-face-bg: #d8f0e8; }
+.mood-choice[data-mood="5"] { --mood-accent: #5e88c9; --mood-accent-soft: #eef4ff; --mood-face-bg: #dfe9ff; }
+.mood-face-wrap { display: grid; place-items: center; width: 61px; height: 61px; margin-bottom: 10px; border-radius: 18px; background: var(--mood-accent-soft); }
+.mood-face-svg { display: block; width: 50px; height: 50px; --mood-face-bg: var(--mood-face-bg, #d8f0e8); }
+.mood-face-disc { fill: var(--mood-face-bg, #d8f0e8); }
+.mood-face-eye { fill: #244d4a; }
+.mood-face-mouth { fill: none; stroke: #244d4a; stroke-width: 2.6; stroke-linecap: round; }
+.mood-choice-label { display: block; max-width: 100%; color: #244b48; font-size: 12px; font-weight: 850; line-height: 1.3; text-align: center; overflow-wrap: anywhere; }
+.mood-choice-scale { margin-top: 7px; color: var(--mood-accent); font-size: 11px; font-weight: 900; }
+.mood-choice-scale span { color: #99aaa7; font-size: 9px; font-weight: 700; }
+.mood-selected-mark { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; color: white; background: var(--mood-accent); font-size: 10px; font-weight: 900; opacity: 0; transform: scale(.6); transition: opacity 140ms ease, transform 140ms ease; }
+.mood-choice.selected .mood-selected-mark { opacity: 1; transform: scale(1); }
+.mood-choice:focus-visible { outline: 3px solid rgba(57,143,130,.28); outline-offset: 3px; }
+.mood-selected-insight { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; display: flex; align-items: center; gap: 14px; position: relative; margin-top: 18px; padding: 15px 18px; border: 1px solid color-mix(in srgb, var(--mood-accent) 20%, white); border-radius: 17px; background: linear-gradient(100deg,var(--mood-accent-soft),#fff 85%); overflow: hidden; }
+.mood-tone-rose { --mood-accent: #d85e69; --mood-accent-soft: #fff0f0; }
+.mood-tone-coral { --mood-accent: #df8667; --mood-accent-soft: #fff4ed; }
+.mood-tone-amber { --mood-accent: #c69a38; --mood-accent-soft: #fff8e5; }
+.mood-tone-teal { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; }
+.mood-tone-blue { --mood-accent: #5e88c9; --mood-accent-soft: #eef4ff; }
+.mood-insight-face { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; border-radius: 15px; background: #fff; box-shadow: 0 3px 10px rgba(21,61,59,.06); }
+.mood-insight-face .mood-face-svg { width: 41px; height: 41px; }
+.mood-insight-copy { display: grid; gap: 2px; min-width: 0; }
+.mood-insight-copy small { color: var(--mood-accent); font-size: 9px; font-weight: 900; letter-spacing: .12em; }
+.mood-insight-copy strong { color: var(--mood-ink); font-size: 15px; }
+.mood-insight-copy > span { color: #718782; font-size: 12px; }
+.mood-insight-spark { margin-left: auto; padding-left: 10px; color: var(--mood-accent); font-size: 25px; opacity: .8; }
+.mood-divider { height: 1px; margin: 25px 0 21px; background: linear-gradient(90deg,#e2eeeb, #e2eeeb 78%,transparent); }
+.mood-measure-heading { margin-bottom: 8px; }
+.mood-measure-subtitle { margin-bottom: 17px; }
+.mood-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
+.mood-metric { --mood-range-color: #398f82; display: grid; gap: 9px; min-width: 0; padding: 16px 16px 13px; border: 1px solid #e2eeeb; border-radius: 16px; background: #fbfdfc; }
+.mood-metric-stress { --mood-range-color: #d98b67; }
+.mood-metric-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mood-metric-heading b { color: #284c49; font-size: 13px; font-weight: 850; }
+.mood-metric-heading strong { color: var(--mood-range-color); font-size: 19px; letter-spacing: -.04em; }
+.mood-metric-heading strong small { margin-left: 2px; color: #8ea29e; font-size: 10px; }
+.mood-metric-hint { min-height: 32px; color: #7c928e; font-size: 11px; line-height: 1.5; }
+.mood-metric input[type="range"] { appearance: none; width: 100%; height: 6px; margin: 5px 0; border: 0; border-radius: 99px; padding: 0; outline: none; cursor: pointer; }
+.mood-metric input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 50%; background: var(--mood-range-color); box-shadow: 0 0 0 1px var(--mood-range-color), 0 2px 5px rgba(25,78,71,.16); }
+.mood-metric input[type="range"]::-moz-range-thumb { width: 13px; height: 13px; border: 3px solid #fff; border-radius: 50%; background: var(--mood-range-color); box-shadow: 0 0 0 1px var(--mood-range-color), 0 2px 5px rgba(25,78,71,.16); }
+.mood-metric-scale { display: flex; justify-content: space-between; color: #94a8a4; font-size: 9px; font-weight: 800; }
+.mood-note { display: grid; gap: 9px; margin-top: 20px; }
+.mood-note-heading > span { color: #284c49; font-size: 13px; font-weight: 850; }
+.mood-note-heading small { color: #93a7a3; font-size: 9px; font-weight: 900; letter-spacing: .1em; }
+.mood-note textarea { display: block; width: 100%; min-height: 94px; padding: 14px 15px; resize: vertical; border: 1px solid #dbe9e5; border-radius: 14px; color: var(--mood-ink); background: #fcfefd; font-size: 13px; line-height: 1.6; transition: border-color 160ms ease, box-shadow 160ms ease; }
+.mood-note textarea:focus { border-color: #72b5a9; box-shadow: 0 0 0 4px rgba(57,143,130,.11); outline: none; }
+.mood-note textarea::placeholder { color: #9aada9; }
+.mood-note-footer { display: flex; justify-content: space-between; gap: 10px; color: #8b9f9b; font-size: 10px; }
+.mood-note-footer > span { flex: none; }
+.mood-form-footer { margin-top: 22px; flex-wrap: wrap; }
+.mood-form-footer p { display: flex; align-items: center; gap: 8px; margin: 0; color: #78918b; font-size: 11px; font-weight: 750; }
+.mood-form-footer p svg { width: 17px; height: 17px; color: #54a28e; }
+.mood-save { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: auto !important; min-width: 174px; min-height: 48px; padding: 0 20px; border-radius: 13px; font-size: 13px; }
+.mood-save > span { font-size: 16px; }
+.mood-feedback { margin: 14px 0 0; font-size: 12px; }
+.mood-side-column { display: grid; gap: 18px; min-width: 0; }
+.mood-page .mood-trend-card, .mood-page .mood-history-card { padding: 23px; }
+.mood-side-title { align-items: flex-start; }
+.mood-side-title .eyebrow { color: #76928d; font-size: 9px; letter-spacing: .12em; }
+.mood-side-title h2 { margin: 7px 0 0; color: var(--mood-ink); font-size: 20px; letter-spacing: -.04em; }
+.mood-chart-icon { display: grid; place-items: center; width: 39px; height: 39px; flex: none; border-radius: 12px; color: var(--mood-teal-deep); background: #e7f5f1; }
+.mood-trend-summary { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 21px 0 16px; }
+.mood-trend-summary > div:first-child { display: grid; gap: 1px; }
+.mood-trend-summary > div:first-child strong { color: var(--mood-ink); font-size: 39px; line-height: 1; letter-spacing: -.07em; }
+.mood-trend-summary > div:first-child > span { margin-top: 6px; color: #7b938e; font-size: 11px; font-weight: 750; }
+.mood-trend-caption { display: inline-flex; align-items: center; gap: 7px; padding-bottom: 4px; color: #7c938e; font-size: 10px; }
+.mood-trend-dot { width: 7px; height: 7px; border-radius: 50%; background: #398f82; }
+.mood-trend-chart { display: flex; align-items: stretch; gap: 8px; height: 125px; padding: 13px 12px 0; border: 1px solid #e5efec; border-radius: 15px; background: linear-gradient(180deg,#f8fcfb,#f5faf8); }
+.mood-trend-column { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; }
+.mood-trend-value, .mood-trend-column > span { display: block; width: min(100%,25px); min-height: 6px; border-radius: 7px 7px 3px 3px; background: #398f82; }
+.mood-trend-value[data-mood="1"] { background: #e46e76; }
+.mood-trend-value[data-mood="2"] { background: #df906f; }
+.mood-trend-value[data-mood="3"] { background: #d9ae55; }
+.mood-trend-value[data-mood="4"] { background: #54a896; }
+.mood-trend-value[data-mood="5"] { background: #6b93d2; }
+.mood-trend-column small { display: block; height: 15px; color: #8da29e; font-size: 9px; text-transform: uppercase; }
+.mood-trend-placeholder > span { height: 30%; background: #e1eeea; }
+.mood-trend-column:nth-child(2n) > span { opacity: .83; }
+.mood-chart-empty { margin: 12px 2px 0; color: #849994; font-size: 11px; line-height: 1.5; }
+.mood-side-error { padding: 9px 10px; font-size: 10px; }
+.mood-trend-legend { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 15px; color: #819691; font-size: 9px; font-weight: 750; }
+.mood-trend-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.mood-trend-legend i { width: 7px; height: 7px; border-radius: 50%; }
+.legend-low { background: #e46e76; }.legend-mid { background: #d9ae55; }.legend-high { background: #398f82; }
+.mood-history-count { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; color: var(--mood-teal-deep); background: #e6f4f0; font-size: 12px; font-weight: 900; }
+.mood-history-list { display: grid; gap: 0; margin-top: 15px; }
+.mood-page .mood-history-row { display: flex; align-items: center; gap: 11px; min-height: 66px; padding: 10px 0; border-bottom: 1px solid #edf2f0; }
+.mood-page .mood-history-row:last-child { border-bottom: 0; }
+.mood-history-face { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 13px; background: #f0f7f5; }
+.mood-history-face .mood-face-svg { width: 35px; height: 35px; }
+.mood-history-row[data-mood="1"] .mood-history-face { background: #fff0f0; --mood-face-bg: #ffe0e0; }
+.mood-history-row[data-mood="2"] .mood-history-face { background: #fff4ed; --mood-face-bg: #ffe9d9; }
+.mood-history-row[data-mood="3"] .mood-history-face { background: #fff8e5; --mood-face-bg: #f8edc8; }
+.mood-history-row[data-mood="4"] .mood-history-face { background: #eaf7f3; --mood-face-bg: #d8f0e8; }
+.mood-history-row[data-mood="5"] .mood-history-face { background: #eef4ff; --mood-face-bg: #dfe9ff; }
+.mood-history-label { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.mood-history-label strong { overflow: hidden; color: #335652; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.mood-history-label small { color: #8b9f9a; font-size: 10px; }
+.mood-history-score { color: #386b64; font-size: 13px; font-weight: 900; }
+.mood-history-score small { color: #a0b0ac; font-size: 9px; font-weight: 700; }
+.mood-history-empty { display: grid; justify-items: center; gap: 8px; padding: 27px 16px 12px; text-align: center; }
+.mood-history-empty > span { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: #398f82; background: #e6f4f0; }
+.mood-history-empty strong { color: #315a55; font-size: 13px; }
+.mood-history-empty p { max-width: 230px; margin: 0; color: #80958f; font-size: 11px; line-height: 1.55; }
+.mood-reassurance-card { display: flex; align-items: flex-start; gap: 11px; padding: 18px 20px; border: 1px solid #d8e8e3; border-radius: 18px; background: linear-gradient(120deg,#eaf7f3,#f3f8ff); }
+.mood-reassurance-card > span { display: grid; place-items: center; width: 29px; height: 29px; flex: none; border-radius: 10px; color: #398f82; background: #fff; box-shadow: 0 3px 10px rgba(35,91,82,.06); }
+.mood-reassurance-card p { display: grid; gap: 3px; margin: 0; color: #67827c; font-size: 11px; line-height: 1.55; }
+.mood-reassurance-card p strong { color: #2e5c56; font-size: 12px; }
+.mood-page .mood-main-card > h2 { font-size: clamp(23px, 2.3vw, 29px); }
+.mood-page button:focus-visible { outline: 3px solid rgba(57,143,130,.34); outline-offset: 3px; }
+html[data-theme="dark"] .mood-page-header h1, html[data-theme="dark"] .mood-date-card strong, html[data-theme="dark"] .mood-main-card > h2, html[data-theme="dark"] .mood-side-title h2, html[data-theme="dark"] .mood-trend-summary > div:first-child strong { color: #e2f5f0; }
+html[data-theme="dark"] .mood-date-card, html[data-theme="dark"] .mood-page .mood-main-card, html[data-theme="dark"] .mood-page .mood-trend-card, html[data-theme="dark"] .mood-page .mood-history-card { background: rgba(18,40,37,.97); border-color: #2b514b; box-shadow: 0 18px 48px rgba(0,0,0,.18); }
+html[data-theme="dark"] .mood-page-header p, html[data-theme="dark"] .mood-card-subtitle, html[data-theme="dark"] .mood-privacy-chip, html[data-theme="dark"] .mood-date-card small, html[data-theme="dark"] .mood-mini-lock { color: #afcdc6; }
+html[data-theme="dark"] .mood-date-icon, html[data-theme="dark"] .mood-chart-icon, html[data-theme="dark"] .mood-step > span:first-child, html[data-theme="dark"] .mood-history-count { color: #a9dfd3; background: #173d36; }
+html[data-theme="dark"] .mood-mini-lock, html[data-theme="dark"] .mood-choice, html[data-theme="dark"] .mood-metric, html[data-theme="dark"] .mood-note textarea { background: #132f2b; border-color: #315a52; }
+html[data-theme="dark"] .mood-choice-label, html[data-theme="dark"] .mood-metric-heading b, html[data-theme="dark"] .mood-note-heading > span, html[data-theme="dark"] .mood-history-label strong, html[data-theme="dark"] .mood-history-empty strong { color: #d8eee8; }
+html[data-theme="dark"] .mood-choice-scale span, html[data-theme="dark"] .mood-metric-hint, html[data-theme="dark"] .mood-note-footer, html[data-theme="dark"] .mood-trend-caption, html[data-theme="dark"] .mood-trend-legend, html[data-theme="dark"] .mood-history-label small, html[data-theme="dark"] .mood-history-empty p { color: #9bbab2; }
+html[data-theme="dark"] .mood-choice.selected { background: linear-gradient(180deg,color-mix(in srgb,var(--mood-accent) 16%,#132f2b),#132f2b 94%); border-color: var(--mood-accent); }
+html[data-theme="dark"] .mood-selected-insight { background: linear-gradient(100deg,color-mix(in srgb,var(--mood-accent) 18%,#132f2b),#132f2b 88%); border-color: color-mix(in srgb,var(--mood-accent) 35%,#315a52); }
+html[data-theme="dark"] .mood-insight-copy strong, html[data-theme="dark"] .mood-history-score { color: #dcefe9; }
+html[data-theme="dark"] .mood-insight-copy > span { color: #b1cbc4; }
+html[data-theme="dark"] .mood-divider, html[data-theme="dark"] .mood-page .mood-history-row { border-color: #274841; }
+html[data-theme="dark"] .mood-metric input[type="range"] { filter: brightness(.85); }
+html[data-theme="dark"] .mood-trend-chart { background: linear-gradient(180deg,#132f2b,#102a26); border-color: #294e47; }
+html[data-theme="dark"] .mood-trend-placeholder > span { background: #254b43; }
+html[data-theme="dark"] .mood-reassurance-card { background: linear-gradient(120deg,#153a33,#182a3b); border-color: #315850; }
+html[data-theme="dark"] .mood-reassurance-card p, html[data-theme="dark"] .mood-reassurance-card p strong { color: #bfe0d6; }
+@media (max-width: 1050px) {
+  .mood-content { width: min(100% - 40px, 900px); }
+  .mood-layout-grid { grid-template-columns: minmax(0,1fr) minmax(275px,.76fr); gap: 16px; }
+  .mood-choice-grid { gap: 7px; }
+  .mood-choice { padding-left: 4px; padding-right: 4px; }
+  .mood-face-wrap { width: 54px; height: 54px; }
+  .mood-face-svg { width: 45px; height: 45px; }
+}
+@media (max-width: 780px) {
+  .mood-layout-grid { grid-template-columns: 1fr; }
+  .mood-side-column { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+  .mood-trend-card { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .mood-content { width: calc(100% - 28px); padding-top: 27px; padding-bottom: 40px; }
+  .mood-topbar-actions { gap: 10px; }
+  .mood-privacy-chip { display: none; }
+  .mood-page-header { align-items: flex-start; flex-direction: column; gap: 17px; margin-bottom: 20px; }
+  .mood-page-header h1 { font-size: clamp(31px, 9vw, 39px); }
+  .mood-date-card { min-width: 0; padding: 9px 12px; }
+  .mood-page .mood-main-card { padding: 22px 16px; }
+  .mood-page .mood-trend-card, .mood-page .mood-history-card { padding: 19px 16px; }
+  .mood-card-topline { align-items: flex-start; }
+  .mood-mini-lock { font-size: 0; gap: 0; padding: 8px; }
+  .mood-choice-grid { grid-template-columns: repeat(5,minmax(0,1fr)); gap: 5px; margin-top: 20px; }
+  .mood-choice { min-height: 121px !important; padding: 11px 2px 10px; border-radius: 14px; }
+  .mood-choice::before { left: 7px; right: 7px; }
+  .mood-face-wrap { width: 42px; height: 42px; margin-bottom: 8px; border-radius: 13px; }
+  .mood-face-svg { width: 36px; height: 36px; }
+  .mood-choice-label { font-size: 10px; }
+  .mood-choice-scale { margin-top: 5px; font-size: 10px; }
+  .mood-choice-scale span { font-size: 8px; }
+  .mood-selected-mark { top: 5px; right: 5px; width: 15px; height: 15px; font-size: 8px; }
+  .mood-selected-insight { gap: 10px; padding: 12px; }
+  .mood-insight-face { width: 39px; height: 39px; flex-basis: 39px; border-radius: 12px; }
+  .mood-insight-face .mood-face-svg { width: 34px; height: 34px; }
+  .mood-insight-copy > span { font-size: 11px; }
+  .mood-insight-spark { font-size: 19px; }
+  .mood-metrics { grid-template-columns: 1fr; gap: 10px; }
+  .mood-metric { padding: 14px; }
+  .mood-metric-hint { min-height: 0; }
+  .mood-form-footer { align-items: stretch; flex-direction: column; }
+  .mood-save { width: 100% !important; }
+  .mood-side-column { grid-template-columns: 1fr; }
+  .mood-trend-card { grid-column: auto; }
+  .mood-trend-chart { height: 115px; }
+  .mood-reassurance-card { padding: 15px; }
+}
+@media (max-width: 360px) {
+  .mood-choice-grid { gap: 3px; }
+  .mood-choice { min-height: 112px !important; }
+  .mood-face-wrap { width: 37px; height: 37px; }
+  .mood-face-svg { width: 32px; height: 32px; }
+  .mood-choice-label { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mood-choice, .mood-choice::before, .mood-selected-mark, .mood-note textarea { transition: none !important; }
+}
