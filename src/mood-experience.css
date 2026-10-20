@@ -61,11 +61,11 @@
 .mood-choice.selected .mood-selected-mark { opacity: 1; transform: scale(1); }
 .mood-choice:focus-visible { outline: 3px solid rgba(57,143,130,.28); outline-offset: 3px; }
 .mood-selected-insight { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; display: flex; align-items: center; gap: 14px; position: relative; margin-top: 18px; padding: 15px 18px; border: 1px solid color-mix(in srgb, var(--mood-accent) 20%, white); border-radius: 17px; background: linear-gradient(100deg,var(--mood-accent-soft),#fff 85%); overflow: hidden; }
-.mood-tone-rose { --mood-accent: #d85e69; --mood-accent-soft: #fff0f0; }
-.mood-tone-coral { --mood-accent: #df8667; --mood-accent-soft: #fff4ed; }
-.mood-tone-amber { --mood-accent: #c69a38; --mood-accent-soft: #fff8e5; }
-.mood-tone-teal { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; }
-.mood-tone-blue { --mood-accent: #5e88c9; --mood-accent-soft: #eef4ff; }
+.mood-tone-rose { --mood-accent: #d85e69; --mood-accent-soft: #fff0f0; --mood-face-bg: #ffe0e0; }
+.mood-tone-coral { --mood-accent: #df8667; --mood-accent-soft: #fff4ed; --mood-face-bg: #ffe9d9; }
+.mood-tone-amber { --mood-accent: #c69a38; --mood-accent-soft: #fff8e5; --mood-face-bg: #f8edc8; }
+.mood-tone-teal { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; --mood-face-bg: #d8f0e8; }
+.mood-tone-blue { --mood-accent: #5e88c9; --mood-accent-soft: #eef4ff; --mood-face-bg: #dfe9ff; }
 .mood-insight-face { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; border-radius: 15px; background: #fff; box-shadow: 0 3px 10px rgba(21,61,59,.06); }
 .mood-insight-face .mood-face-svg { width: 41px; height: 41px; }
 .mood-insight-copy { display: grid; gap: 2px; min-width: 0; }
