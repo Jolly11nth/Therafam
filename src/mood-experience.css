@@ -50,7 +50,7 @@
 .mood-choice[data-mood="4"] { --mood-accent: #398f82; --mood-accent-soft: #eaf7f3; --mood-face-bg: #d8f0e8; }
 .mood-choice[data-mood="5"] { --mood-accent: #5e88c9; --mood-accent-soft: #eef4ff; --mood-face-bg: #dfe9ff; }
 .mood-face-wrap { display: grid; place-items: center; width: 61px; height: 61px; margin-bottom: 10px; border-radius: 18px; background: var(--mood-accent-soft); }
-.mood-face-svg { display: block; width: 50px; height: 50px; --mood-face-bg: var(--mood-face-bg, #d8f0e8); }
+.mood-face-svg { display: block; width: 50px; height: 50px; }
 .mood-face-disc { fill: var(--mood-face-bg, #d8f0e8); }
 .mood-face-eye { fill: #244d4a; }
 .mood-face-mouth { fill: none; stroke: #244d4a; stroke-width: 2.6; stroke-linecap: round; }
