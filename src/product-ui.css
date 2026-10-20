@@ -1,0 +1,203 @@
+/* Therafam product UI system: crisp typography, confident hierarchy, and calm color. */
+:root {
+  --product-ink: #173f3b;
+  --product-muted: #627e79;
+  --product-teal: #398f82;
+  --product-border: #d5e6e1;
+  --product-surface: #ffffff;
+  --product-canvas: #f3f8f6;
+  --product-radius: 22px;
+  --product-shadow: 0 12px 32px rgba(23, 72, 65, .055);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body, .app { color: var(--product-ink); }
+.app, .workspace-shell {
+  background:
+    radial-gradient(circle at 94% 1%, rgba(118, 196, 177, .12), transparent 25rem),
+    linear-gradient(150deg, #f4faf8 0%, #f7faf9 52%, #f1f6fb 100%);
+}
+.workspace-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(250, 254, 252, .86);
+  border-color: rgba(210, 230, 224, .9);
+}
+.workspace-brand { display: inline-flex; align-items: center; border: 0; background: transparent; }
+.workspace-brand:hover { transform: none; }
+.workspace-content { width: min(1240px, calc(100% - 56px)); }
+.workspace-heading { gap: 26px; }
+.workspace-heading h1 { color: var(--product-ink); font-weight: 800; }
+.workspace-heading p { color: var(--product-muted); font-size: 14px; line-height: 1.7; }
+.eyebrow { color: #4f9589; letter-spacing: .15em; }
+.dashboard-grid { gap: 20px; }
+.dashboard-card, .program-card, .settings-card, .messages-card, .program-detail, .ai-info-card, .chat-panel {
+  border: 1px solid var(--product-border);
+  border-radius: var(--product-radius);
+  background: rgba(255,255,255,.96);
+  box-shadow: var(--product-shadow);
+}
+.dashboard-card {
+  position: relative;
+  min-height: 218px;
+  padding: 25px;
+  overflow: hidden;
+}
+.dashboard-card .card-heading {
+  position: relative;
+  z-index: 1;
+  color: #66847e;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .015em;
+}
+.dashboard-card p { color: #6b8580; font-size: 12px; line-height: 1.7; }
+.dashboard-card .outline-action, .dashboard-card .ghost {
+  min-height: 39px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.mood-card {
+  border-color: #c4e1d9;
+  background: linear-gradient(145deg, #ffffff 0%, #f3fbf8 66%, #eaf7f2 100%);
+}
+.mood-card::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -45px;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgba(76, 163, 143, .11);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(108, 190, 171, .12), rgba(108, 190, 171, 0) 70%);
+  pointer-events: none;
+}
+.mood-card .mood-score {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 25px;
+  color: #1e6459;
+  font-size: clamp(46px, 4vw, 57px);
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: -.075em;
+}
+.mood-card .mood-score::after {
+  content: '/ 5';
+  color: #8aaca4;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+}
+.mood-card > p { max-width: 250px; margin: 12px 0 20px; }
+.mood-card .outline-action {
+  position: relative;
+  z-index: 1;
+  color: #266e63;
+  border-color: #a3d1c4;
+  background: rgba(255,255,255,.86);
+}
+.progress-card .trend-value {
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: #28796d;
+  background: #e7f5f0;
+  font-size: 15px;
+  font-weight: 850;
+}
+.mini-bars { height: 82px; gap: 9px; margin: 23px 0 11px; }
+.mini-bars span {
+  min-height: 12px;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(180deg,#70b9a6,#a8d9cc);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+.mini-bars span:nth-child(4n+1) { background: linear-gradient(180deg,#77a0d4,#b6ccef); }
+.mini-bars span:nth-child(4n+2) { background: linear-gradient(180deg,#61b39e,#a9decf); }
+.mini-bars span:nth-child(4n+3) { background: linear-gradient(180deg,#d9ad54,#f3dfab); }
+.next-card { background: linear-gradient(150deg,#fff 0%,#f8f7ff 100%); border-color: #e0def1; }
+.next-card .card-heading > span:last-child { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 11px; color: #6664ac; background: #eeedff; }
+.next-card h3 { margin: 24px 0 8px; color: #253f4d; font-size: 22px; letter-spacing: -.035em; line-height: 1.2; }
+.next-card p { max-width: 275px; }
+.next-card .ghost { color: #52549d; border-color: #d7d5f0; background: rgba(255,255,255,.8); }
+.section-title-row h2 { color: var(--product-ink); letter-spacing: -.035em; }
+.section-title-row p { color: var(--product-muted); font-size: 13px; line-height: 1.65; }
+.program-card { position: relative; padding: 25px; }
+.program-card h3 { color: var(--product-ink); font-size: 20px; line-height: 1.25; letter-spacing: -.035em; }
+.program-card p { color: var(--product-muted); font-size: 12px; line-height: 1.7; }
+.program-category { background: #e7f5f0; color: #307e71; }
+.program-meta span { background: #f2f8f6; color: #6b8780; border: 1px solid #e6efeb; }
+.quick-actions { gap: 13px; }
+.quick-actions button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  min-height: 112px;
+  padding: 20px 22px;
+  overflow: hidden;
+  border: 1px solid #d7e7e2;
+  border-radius: 18px;
+  color: #244f4a;
+  background: rgba(255,255,255,.9);
+  box-shadow: 0 8px 22px rgba(23,72,65,.035);
+  text-align: left;
+}
+.quick-actions button:nth-child(2) { border-color: #c8e5dc; background: linear-gradient(135deg,#f8fdfa,#eaf7f2); }
+.quick-actions button:nth-child(3) { border-color: #dcdff0; background: linear-gradient(135deg,#fff,#f5f5ff); }
+.quick-actions button:nth-child(4) { border-color: #d7e3f2; background: linear-gradient(135deg,#fff,#f0f6ff); }
+.quick-actions button strong { position: relative; z-index: 1; font-size: 14px; font-weight: 850; letter-spacing: -.015em; }
+.quick-actions button span { position: relative; z-index: 1; color: #728b85; font-size: 11px; line-height: 1.5; }
+.therapist-discovery-card { padding: 27px; border: 1px solid #d5e6e1; border-radius: 22px; background: rgba(255,255,255,.9); box-shadow: var(--product-shadow); }
+.therapist-preview { border-radius: 15px; border-color: #e0ece8; background: #fbfdfc; }
+.icon-action, .avatar-button { transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+.icon-action { border: 1px solid #d7e8e3; background: #fff; }
+.avatar-button { background: linear-gradient(135deg,#398f82,#56b09e); }
+.primary-action, .full-action { background: linear-gradient(135deg,#28796e,#398f82 65%,#55aa9a); }
+.outline-action, .ghost, .google-action { border-radius: 12px; }
+.status-toggle { min-height: 30px !important; height: 30px !important; }
+.status-toggle span { top: 4px; }
+button:not(.status-toggle):focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(57,143,130,.32);
+  outline-offset: 3px;
+}
+html[data-theme="dark"] .app, html[data-theme="dark"] .workspace-shell {
+  background: radial-gradient(circle at 94% 1%,rgba(54,111,101,.19),transparent 25rem),linear-gradient(150deg,#0b2521,#102d29 52%,#172936);
+}
+html[data-theme="dark"] .workspace-topbar { background: rgba(12,34,30,.85); border-color: #254b44; }
+html[data-theme="dark"] .dashboard-card, html[data-theme="dark"] .program-card, html[data-theme="dark"] .therapist-discovery-card, html[data-theme="dark"] .quick-actions button {
+  color: #dff2ed; background: rgba(18,40,37,.95); border-color: #2b514b; box-shadow: 0 12px 32px rgba(0,0,0,.14);
+}
+html[data-theme="dark"] .mood-card { background: linear-gradient(145deg,#142f2a,#143932 72%,#153d34); border-color: #2c6558; }
+html[data-theme="dark"] .mood-card .mood-score, html[data-theme="dark"] .next-card h3, html[data-theme="dark"] .program-card h3, html[data-theme="dark"] .section-title-row h2 { color: #e2f5f0; }
+html[data-theme="dark"] .dashboard-card p, html[data-theme="dark"] .program-card p, html[data-theme="dark"] .section-title-row p, html[data-theme="dark"] .quick-actions button span { color: #a8c9c2; }
+html[data-theme="dark"] .next-card { background: linear-gradient(145deg,#172a2d,#222744); border-color: #3a435c; }
+html[data-theme="dark"] .quick-actions button:nth-child(2) { background: linear-gradient(135deg,#142f2a,#173d35); }
+html[data-theme="dark"] .quick-actions button:nth-child(3) { background: linear-gradient(135deg,#172a2d,#222744); }
+html[data-theme="dark"] .quick-actions button:nth-child(4) { background: linear-gradient(135deg,#162b35,#1c3043); }
+@media (max-width: 900px) {
+  .workspace-content { width: calc(100% - 40px); }
+  .dashboard-grid { gap: 14px; }
+  .dashboard-card { padding: 20px; }
+  .quick-actions button { min-height: 98px; }
+}
+@media (max-width: 620px) {
+  .workspace-content { width: calc(100% - 28px); }
+  .workspace-topbar { backdrop-filter: blur(12px); }
+  .therapist-discovery-card { padding: 18px; }
+  .program-card { padding: 20px; }
+  .dashboard-card { padding: 21px; }
+  .quick-actions button { min-height: 86px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card, .program-card, .quick-actions button, .icon-action, .avatar-button { transition: none !important; }
+}
