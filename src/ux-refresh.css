@@ -1,0 +1,210 @@
+/* Therafam UI refresh — shared, responsive polish. Preserve the established teal/mint palette. */
+:root {
+  --ux-ink: #174f4b;
+  --ux-muted: #587b76;
+  --ux-teal: #398f82;
+  --ux-teal-deep: #256d64;
+  --ux-mint: #e8f5f2;
+  --ux-line: #c8e0da;
+  --ux-card: rgba(255,255,255,.94);
+  --ux-radius: 22px;
+  --ux-shadow: 0 12px 32px rgba(28, 83, 76, .08);
+  --ux-shadow-hover: 0 18px 40px rgba(28, 83, 76, .13);
+}
+html { scroll-behavior: smooth; }
+body { color: var(--ux-ink); font-size: 15px; line-height: 1.55; }
+::selection { color: #123f39; background: #bce7dc; }
+a { color: var(--ux-teal-deep); text-underline-offset: 3px; }
+button, input, select, textarea { font-size: inherit; }
+button { min-height: 40px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(57,143,130,.32); outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; opacity: .58; }
+h1, h2, h3, h4 { color: var(--ux-ink); letter-spacing: -.025em; line-height: 1.2; }
+p { line-height: 1.65; }
+small { line-height: 1.5; }
+
+/* Welcoming first impression */
+.landing-shell { align-items: center; padding: clamp(20px, 5vh, 54px) 20px; }
+.landing-content {
+  width: min(100%, 700px); min-height: 0; padding: clamp(28px, 5vw, 58px);
+  border: 1px solid rgba(183,212,206,.8); border-radius: 30px;
+  box-shadow: 0 24px 70px rgba(38,92,87,.10);
+}
+.landing-content h1 { max-width: 590px; margin: 20px auto 0; font-size: clamp(2.25rem, 5vw, 3.6rem); line-height: 1.05; letter-spacing: -.055em; }
+.landing-subtitle { max-width: 510px; margin: 20px auto 28px; font-size: clamp(14px, 1.5vw, 17px); }
+.landing-logo-card { width: min(100%, 340px); height: 116px; margin: 0 auto 28px; }
+.landing-logo-card .therafam-logo { width: min(270px, 90%); }
+.landing-preferences { flex-wrap: wrap; margin-bottom: 28px; }
+.language-select { min-height: 42px; border-radius: 12px; font-size: 13px; }
+.theme-button { min-height: 42px; border-radius: 12px; font-size: 13px; }
+.landing-actions { gap: 12px; }
+.landing-actions .outline-action, .landing-actions .primary-action { width: min(100%, 190px); min-height: 48px; height: auto; border-radius: 14px; font-size: 14px; }
+.landing-therapist-action { margin: 16px 0 8px; }
+.therapist-signup-link { font-size: 14px; }
+.landing-lower { margin-top: 20px; }
+.guest, .link-button, .text-link { min-height: 34px; font-size: 13px; }
+.anonymous-copy, .privacy-copy { font-size: 12px; }
+.auth-shell { padding: 24px 16px; }
+.auth-card { width: min(100%, 500px); min-height: 0; padding: clamp(24px, 5vw, 42px); border: 1px solid var(--ux-line); border-radius: 26px; box-shadow: 0 24px 70px rgba(38,92,87,.12); }
+.auth-tabs { padding: 4px; border-radius: 13px; }
+.tab { min-height: 44px; font-size: 14px; }
+.tab.active { border-radius: 10px; }
+.auth-form > input, .password-field input { min-height: 48px; height: auto; padding: 12px 14px; border-radius: 12px; font-size: 14px; }
+.auth-form > input { margin-bottom: 12px; }
+.password-field input { padding-right: 44px; }
+.password-field span { top: 14px; font-size: 13px; }
+.full-action, .google-action { min-height: 46px; height: auto; border-radius: 12px; font-size: 14px; }
+.demo-card, .professional-card { padding: 15px 16px; border-radius: 14px; }
+.demo-card strong, .professional-card strong { font-size: 13px; }
+.demo-card p, .professional-card p, .test-account-card p { font-size: 12px; }
+.demo-card small, .demo-status { font-size: 11px; }
+
+/* Consistent app chrome and content rhythm */
+.workspace-shell { min-height: 100vh; }
+.workspace-topbar {
+  min-height: 72px; padding: 12px clamp(16px, 4vw, 44px);
+  background: rgba(250,254,252,.88); border-bottom: 1px solid rgba(183,212,206,.8);
+  box-shadow: 0 4px 18px rgba(28,83,76,.035);
+}
+.workspace-brand .therafam-logo { width: 132px; }
+.workspace-top-actions { gap: 10px; }
+.icon-action { width: 42px; height: 42px; }
+.avatar-button { width: 42px; height: 42px; font-size: 13px; }
+.workspace-content { width: min(1200px, calc(100% - 48px)); padding: clamp(28px, 4vw, 52px) 0 72px; }
+.narrow-content { width: min(960px, calc(100% - 48px)); }
+.workspace-heading { margin-bottom: clamp(24px, 3vw, 36px); align-items: center; }
+.workspace-heading h1 { font-size: clamp(30px, 4vw, 46px); letter-spacing: -.045em; }
+.workspace-heading p { font-size: 15px; max-width: 660px; }
+.eyebrow { font-size: 11px; letter-spacing: .13em; }
+.section-block { margin-top: 44px; }
+.section-title-row { margin-bottom: 18px; }
+.section-title-row h2 { font-size: clamp(21px, 2.4vw, 27px); }
+.dashboard-grid, .program-grid, .program-grid.large { gap: 20px; }
+.dashboard-card, .program-card, .settings-card, .messages-card, .program-detail, .ai-info-card, .chat-panel {
+  border-radius: var(--ux-radius); border-color: var(--ux-line); background: var(--ux-card); box-shadow: var(--ux-shadow);
+}
+.dashboard-card { min-height: 210px; padding: clamp(20px, 2.2vw, 28px); }
+.card-heading { font-size: 13px; }
+.dashboard-card p, .program-card p { font-size: 13px; line-height: 1.7; }
+.mood-score { font-size: clamp(38px, 4vw, 48px); }
+.soft-badge, .verified-badge, .program-category { font-size: 11px; padding: 6px 10px; }
+.next-card h3, .program-card h3 { font-size: 21px; }
+.program-card { min-height: 285px; padding: clamp(20px, 2.2vw, 28px); }
+.program-meta, .detail-meta { font-size: 11px; gap: 8px; }
+.program-meta span, .detail-meta span { padding: 7px 9px; border-radius: 9px; }
+.quick-actions { gap: 14px; }
+.quick-actions button { min-height: 110px; padding: 20px; border-radius: 17px; font-size: 14px; }
+.quick-actions span { font-size: 12px; line-height: 1.5; }
+
+/* Shared form and content components */
+input, select, textarea {
+  max-width: 100%; color: var(--ux-ink);
+}
+input:not([type=checkbox]):not([type=radio]), select, textarea {
+  border-radius: 12px;
+}
+input::placeholder, textarea::placeholder { color: #789993; opacity: 1; }
+label { line-height: 1.45; }
+.outline-action, .primary-action, .full-action, .google-action, .small-outline, .ghost {
+  min-height: 44px; border-radius: 12px; font-size: 13px; font-weight: 800;
+}
+.outline-action, .google-action, .small-outline { border-color: #9dc9bf; }
+.primary-action, .full-action { color: white; }
+.form-message, .form-error { padding: 12px 14px; border-radius: 12px; line-height: 1.55; }
+.form-message { background: #e7f6ef; border: 1px solid #b7e2cd; }
+.form-error { background: #fff1ef; border: 1px solid #f0c3bd; }
+.simple-page { width: min(100% - 40px, 760px); padding: clamp(24px, 5vw, 48px); border-radius: 24px; box-shadow: var(--ux-shadow); }
+.simple-page h1 { font-size: clamp(28px, 4vw, 40px); }
+
+/* Therapist and message workspaces */
+.therapist-dashboard-nav { gap: 8px; padding: 7px; border-radius: 17px; }
+.dashboard-nav-button { min-height: 44px; padding: 10px 16px; border-radius: 12px; font-size: 13px; }
+.therapist-status-control { border-radius: 16px; }
+.therapist-field input, .therapist-field textarea, .profile-fields input, .profile-fields select, .profile-fields textarea, .support-form textarea {
+  min-height: 46px; border-radius: 12px; font-size: 14px;
+}
+.therapist-action-panel { border-radius: 22px; }
+.workflow-list button { min-height: 46px; border-radius: 12px; }
+.messages-card, .chat-panel { overflow: hidden; }
+.chat-panel textarea, .chat-panel input, .support-form textarea { line-height: 1.6; }
+
+/* Motion is subtle and optional */
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-card, .program-card, .settings-card, .messages-card, .program-detail, .ai-info-card, .chat-panel {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .dashboard-card:hover, .program-card:hover, .settings-card:hover, .messages-card:hover, .program-detail:hover, .ai-info-card:hover, .chat-panel:hover {
+    transform: translateY(-3px); box-shadow: var(--ux-shadow-hover);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+@media (max-width: 900px) {
+  .dashboard-grid, .program-grid, .program-grid.large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-heading { align-items: flex-start; flex-direction: column; }
+  .workspace-heading > :last-child { max-width: 100%; }
+  .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-editor { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .landing-shell { padding: 12px; }
+  .landing-content { padding: 30px 20px 26px; border-radius: 22px; }
+  .landing-content h1 { font-size: clamp(2rem, 9vw, 2.8rem); }
+  .landing-subtitle { margin: 16px auto 22px; }
+  .landing-logo-card { height: 90px; margin-bottom: 22px; }
+  .landing-actions { gap: 10px; }
+  .landing-actions .outline-action, .landing-actions .primary-action { min-width: 0; flex: 1; padding: 0 12px; }
+  .desktop-only { display: none; }
+  .auth-shell { align-items: flex-start; padding: 12px; }
+  .auth-card { padding: 28px 20px; border-radius: 20px; }
+  .workspace-topbar { min-height: 62px; padding: 9px 14px; gap: 10px; }
+  .workspace-brand .therafam-logo { width: 108px; }
+  .workspace-top-actions { gap: 7px; }
+  .icon-action, .avatar-button { width: 38px; height: 38px; }
+  .workspace-content, .narrow-content { width: calc(100% - 28px); padding: 26px 0 44px; }
+  .workspace-heading { gap: 12px; margin-bottom: 24px; }
+  .workspace-heading h1 { font-size: clamp(28px, 8vw, 36px); }
+  .workspace-heading p { font-size: 14px; }
+  .dashboard-grid, .program-grid, .program-grid.large { grid-template-columns: 1fr; gap: 14px; }
+  .dashboard-card { min-height: 0; padding: 20px; }
+  .program-card { min-height: 0; padding: 20px; }
+  .quick-actions { grid-template-columns: 1fr; gap: 10px; margin-top: 20px; }
+  .quick-actions button { min-height: 80px; padding: 16px; }
+  .section-block { margin-top: 32px; }
+  .section-title-row { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .section-title-row h2 { font-size: 22px; }
+  .field-row, .profile-editor, .profile-editor-grid { grid-template-columns: 1fr; }
+  .profile-fields { gap: 12px; }
+  .danger-zone { align-items: flex-start; flex-direction: column; }
+  .support-panel-header { flex-direction: column; }
+  .support-form-actions { display: grid; grid-template-columns: 1fr; }
+  .simple-page { width: calc(100% - 28px); margin: 24px auto; padding: 24px 18px; }
+}
+@media (max-width: 380px) {
+  .workspace-top-actions { gap: 5px; }
+  .workspace-brand .therafam-logo { width: 94px; }
+  .landing-preferences { align-items: stretch; flex-direction: column; }
+  .landing-preferences .language-select, .landing-preferences .theme-button { width: 100%; }
+}
+html[data-theme='dark'] {
+  --ux-ink: #e0f4ef; --ux-muted: #b1d0c9; --ux-card: rgba(16,37,34,.96); --ux-line: #2d554e;
+  --ux-shadow: 0 14px 34px rgba(0,0,0,.18); --ux-shadow-hover: 0 18px 40px rgba(0,0,0,.26);
+}
+html[data-theme='dark'] body, html[data-theme='dark'] .landing-content, html[data-theme='dark'] .auth-card {
+  color: var(--ux-ink); border-color: var(--ux-line);
+}
+html[data-theme='dark'] h1, html[data-theme='dark'] h2, html[data-theme='dark'] h3, html[data-theme='dark'] h4 { color: #c7eee4; }
+html[data-theme='dark'] input, html[data-theme='dark'] select, html[data-theme='dark'] textarea {
+  color: #e0f4ef; background-color: #17322f; border-color: #4b8278;
+}
+html[data-theme='dark'] input::placeholder, html[data-theme='dark'] textarea::placeholder { color: #9abbb3; }
+html[data-theme='dark'] .form-message { color: #d9f8e8 !important; background: #173d31; border-color: #2b6c50; }
+html[data-theme='dark'] .form-error { color: #ffe2de !important; background: #482824; border-color: #7f4941; }
+html[data-theme='dark'] .landing-content { background: rgba(16,37,34,.97); }
+html[data-theme='dark'] .workspace-topbar { background: rgba(16,37,34,.92); border-color: var(--ux-line); }
+html[data-theme='dark'] .quick-actions button { color: #d5eee7; background: rgba(16,37,34,.86); border-color: var(--ux-line); }
+html[data-theme='dark'] .quick-actions span, html[data-theme='dark'] .dashboard-card p, html[data-theme='dark'] .program-card p { color: #a8c9c2; }

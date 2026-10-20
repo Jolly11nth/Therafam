@@ -7,6 +7,7 @@ import './theme-polish.css';
 import './preferences.css';
 import './therapist-interactions.css';
 import './therapist-dashboard-polish.css';
+import './ux-refresh.css';
 
 initializePreferences();
 
